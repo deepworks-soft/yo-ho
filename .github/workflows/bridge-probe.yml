@@ -1,0 +1,31 @@
+name: Проверка картинок моста
+# Запуск вручную: какие картинки подборок/стилей (/img/…) мост отдаёт, их размер и время. Только чтение.
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: 'Номера записей, например 1-80'
+        default: '1-80'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Картинки
+        env:
+          IDS: ${{ inputs.ids }}
+        run: |
+          B=https://deep-cinema.kozenkov-nikita-vladimirovich.workers.dev
+          a=${IDS%-*}; b=${IDS#*-}
+          out=""
+          for i in $(seq "$a" "$b"); do
+            for f in tile banner cover; do
+              r=$(curl -s -o /tmp/x -w '%{http_code} %{size_download} %{time_total}' "$B/img/$i-$f-1.jpg")
+              set -- $r
+              [ "$1" = 404 ] && continue
+              out="$out$i-$f: $1, $(( $2 / 1024 )) КБ, $3 с%0A"
+            done
+          done
+          echo "::notice title=Картинки моста::${out:-ни одной}"
