@@ -12,7 +12,7 @@ on:
         description: 'Ветка для сайта и справки'
         default: main
 permissions:
-  contents: read
+  contents: write   # выпуск GitHub — запасной путь на Диск
 concurrency:
   group: promote
 jobs:
@@ -31,6 +31,8 @@ jobs:
         env:
           T: ${{ secrets.YADISK_TOKEN }}
           V: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          PY: python3
         run: |
           set -e
           pip install -q cryptography
@@ -57,12 +59,40 @@ jobs:
                   print(f"::error title=Яндекс Диск::нет или не тот размер: {f['name']}")
           sys.exit(1 if bad else 0)
           PY
-          for i in 1 2 3 4 5 6; do
-            href=$(curl -s -H "$A" "$API/upload?path=$(enc disk:/Yo-ho/manifest.json)&overwrite=true" | python3 -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
-            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 -T beta.json "$href" || true)
-            case "$code" in 200|201|202) break;; esac
-            [ $i = 6 ] && { echo "::error title=Яндекс Диск::manifest.json не загрузился"; exit 1; }
-            sleep 5
-          done
+          up() { # файл → путь на Диске. Сначала напрямую; если Яндекс не даёт ссылку (лимит загрузки
+                 # DiskUploadTrafficLimitExceeded) — файл идёт в выпуск GitHub v$VERSION, а Диск сам скачивает его по ссылке.
+                 # Имя файла = имя на Диске. Сервера загрузки Диска бывают медленными: < 1 МБ/с дольше минуты — заново.
+            for i in 1 2 3 4 5 6; do
+              lim="--speed-limit 1000000 --speed-time 60"; [ $i = 6 ] && lim=""
+              href=$(curl -s -H "$A" "$API/upload?path=$(enc "$2")&overwrite=true" | $PY -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+              [ -z "$href" ] && break
+              code=$(curl -s -o /dev/null -w '%{http_code}' $lim --max-time 3600 -T "$1" "$href" || true)
+              case "$code" in 200|201|202) echo "$(basename "$1"): загружен"; return 0;; esac
+              echo "$(basename "$1"): попытка $i не удалась ($code)"; sleep 5
+            done
+            echo "$(basename "$1"): напрямую Диск не принимает — через выпуск GitHub"
+            gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
+              gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease --title "Yo-ho $VERSION" \
+                --notes "Файлы Yo-ho $VERSION. Устанавливать удобнее с сайта: https://deepworks-soft.github.io" > /dev/null 2>&1 || true
+            for i in 1 2 3; do gh release upload "v$VERSION" "$1" --clobber -R "$GITHUB_REPOSITORY" && break; sleep 10; done
+            url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/$(basename "$1")"
+            for i in 1 2 3; do
+              curl -s -o /dev/null -X DELETE -H "$A" "$API?path=$(enc "$2")&permanently=true" || true
+              sleep 3
+              op=$(curl -s -X POST -H "$A" "$API/upload?path=$(enc "$2")&url=$(enc "$url")" | $PY -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+              if [ -n "$op" ]; then
+                for k in $(seq 1 360); do
+                  st=$(curl -s -H "$A" "$op" | $PY -c "import json,sys;print(json.load(sys.stdin).get('status',''))" 2>/dev/null || true)
+                  [ "$st" = success ] && { echo "$(basename "$1"): Диск скачал с GitHub"; return 0; }
+                  [ "$st" = failed ] && break
+                  sleep 10
+                done
+              fi
+              echo "$(basename "$1"): Диск не скачал по ссылке (попытка $i)"; sleep 15
+            done
+            echo "::error title=Яндекс Диск::Не загрузился $(basename "$1")"; return 1
+          }
+          cp beta.json manifest.json
+          VERSION="$V" up manifest.json disk:/Yo-ho/manifest.json
           bash tool/disk_current.sh "$V"
           echo "::notice title=Выпуск::Yo-ho $V — теперь у всех (программа найдёт обновление в течение получаса)"
