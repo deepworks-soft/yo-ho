@@ -1,0 +1,37 @@
+name: Проверка ключа подписи
+
+# Запуск вручную. Ключ подписи APK из секрета ANDROID_KEYSTORE_B64 открывается и даёт тот же
+# открытый ключ обновлений, что встроен в программу (значит, это тот же ключ, что у прежних сборок).
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ветка кода'
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - name: Ключ
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          [ -n "$KEYSTORE_B64" ] || { echo "::error title=Ключ::Нет секрета ANDROID_KEYSTORE_B64"; exit 1; }
+          echo "$KEYSTORE_B64" | base64 -d > ks || { echo "::error title=Ключ::Секрет не расшифровывается — скопирован не целиком?"; exit 1; }
+          keytool -list -keystore ks -storepass android -alias androiddebugkey > /dev/null 2>&1 || { echo "::error title=Ключ::Хранилище не открывается — скопирован не целиком?"; rm -f ks; exit 1; }
+          pip install -q cryptography
+          got=$(python3 tool/update_sign.py pubkey ks); rm -f ks
+          want=$(grep -o "updatePublicKey = '[^']*'" lib/core/keys.dart | cut -d"'" -f2)
+          if [ "$got" = "$want" ]; then echo "::notice title=Ключ подписи::тот же, что у прежних сборок ✓"; else echo "::error title=Ключ::Это другой ключ (открытый $got, нужен $want)"; exit 1; fi

@@ -1,0 +1,63 @@
+name: Проверка кода
+# Запуск вручную: flutter analyze по ветке (ошибки компиляции видно за пару минут, без сборки)
+# + проверки кода моста под node. Итог — в заметках запуска.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ветка'
+        default: main
+permissions:
+  contents: read
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Мост
+        run: |
+          cd tool/bridge && cp worker.js worker.mjs
+          if [ -f keys_test.mjs ]; then
+            if node keys_test.mjs > k.log 2>&1; then echo "::notice title=Мост: ключи::$(grep -c '✓' k.log) проверок ✓"; else echo "::error title=Мост: ключи::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' k.log)"; exit 1; fi
+          fi
+          if [ -f club_test.mjs ]; then
+            if node --no-warnings club_test.mjs > c.log 2>&1; then echo "::notice title=Мост: клуб::$(grep -c '✓' c.log) проверок ✓"; else echo "::error title=Мост: клуб::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' c.log)"; exit 1; fi
+          fi
+          if [ -f watch_test.mjs ]; then
+            if node --no-warnings watch_test.mjs > wt.log 2>&1; then echo "::notice title=Мост: наблюдение::$(grep -c '✓' wt.log) проверок ✓"; else echo "::error title=Мост: наблюдение::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' wt.log)"; exit 1; fi
+          fi
+          if [ -f curated_test.mjs ]; then
+            if node --no-warnings curated_test.mjs > cu.log 2>&1; then echo "::notice title=Мост: подборки и бот::$(grep -c '✓' cu.log) проверок ✓"; else echo "::error title=Мост: подборки и бот::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' cu.log)"; exit 1; fi
+          fi
+          if [ -f chunks_test.mjs ]; then
+            if node --no-warnings chunks_test.mjs > ch.log 2>&1; then echo "::notice title=Мост: куски::$(grep -c '✓' ch.log) проверок ✓"; else echo "::error title=Мост: куски::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' ch.log)"; exit 1; fi
+          fi
+          if [ -f social_test.mjs ]; then
+            if node --no-warnings social_test.mjs > s.log 2>&1; then echo "::notice title=Мост: друзья::$(grep -c '✓' s.log) проверок ✓"; else echo "::error title=Мост: друзья::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' s.log)"; exit 1; fi
+          fi
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Анализ
+        run: |
+          flutter pub get > pub.log 2>&1 || { echo "::error title=pub get::$(tail -n 20 pub.log | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"; exit 1; }
+          rc=0; flutter analyze --no-fatal-infos --no-fatal-warnings lib test > a.log 2>&1 || rc=$?
+          errs=$(grep -E '^\s*error' a.log | head -n 40 || true)
+          warns=$(grep -E '^\s*warning' a.log | head -n 30 || true)
+          if [ -n "$warns" ]; then echo "::warning title=Предупреждения::$(echo "$warns" | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"; fi
+          if [ -n "$errs" ] || [ $rc -ne 0 ]; then
+            echo "::error title=Ошибки::$( (echo "$errs"; tail -n 5 a.log) | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
+            exit 1
+          fi
+          echo "::notice title=Анализ::ошибок нет"

@@ -1,0 +1,39 @@
+name: Проверка Диска раздачи
+
+# Запуск вручную. Проверяет токен YADISK_TOKEN: чей это Диск, сколько места, можно ли писать.
+# Токен в журнал не выводится; итог — в заметках запуска.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Диск
+        env:
+          T: ${{ secrets.YADISK_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then echo "::error title=Диск::Нет секрета YADISK_TOKEN"; exit 1; fi
+          A="Authorization: OAuth $T"
+          code=$(curl -s -o disk.json -w '%{http_code}' -H "$A" https://cloud-api.yandex.net/v1/disk)
+          if [ "$code" != 200 ]; then echo "::error title=Диск::Яндекс ответил $code: $(head -c 300 disk.json)"; exit 1; fi
+          info=$(python3 -c "
+          import json; d=json.load(open('disk.json')); u=d.get('user',{})
+          gb=lambda b: f'{b/1024**3:.1f} ГБ'
+          print(f\"аккаунт: {u.get('login','?')} ({u.get('display_name','')}), занято {gb(d.get('used_space',0))} из {gb(d.get('total_space',0))}\")")
+          # Проба записи: папка, файл, удаление.
+          curl -s -o /dev/null -X PUT -H "$A" "https://cloud-api.yandex.net/v1/disk/resources?path=disk%3A%2Fyo-ho-check" || true
+          curl -s -H "$A" "https://cloud-api.yandex.net/v1/disk/resources/upload?path=disk%3A%2Fyo-ho-check%2Fok.txt&overwrite=true" > upl.json
+          # Ответ Яндекса без ссылки — показать причину (ошибка и описание, без токена).
+          why=$(python3 -c "import json; d=json.load(open('upl.json')); print('' if d.get('href') else f\"{d.get('error','')}: {d.get('description','')}\")" 2>/dev/null || head -c 200 upl.json)
+          [ -n "$why" ] && echo "::warning title=Диск::Яндекс не дал ссылку для записи — $why"
+          up=$(python3 -c "import json; print(json.load(open('upl.json')).get('href',''))" 2>/dev/null || true)
+          w=нет
+          if [ -n "$up" ] && echo ok | curl -s -o /dev/null -w '%{http_code}' -T - "$up" | grep -qE '^20[01]$'; then w=да; fi
+          curl -s -o /dev/null -X DELETE -H "$A" "https://cloud-api.yandex.net/v1/disk/resources?path=disk%3A%2Fyo-ho-check&permanently=true" || true
+          echo "::notice title=Диск раздачи::$info; запись: $w"
+          [ "$w" = да ] || { echo "::error title=Диск::Записать на Диск не получилось — проверьте права приложения"; exit 1; }

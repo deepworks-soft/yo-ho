@@ -1,0 +1,68 @@
+name: Выпустить для всех
+# Запуск вручную, когда владелец проверил тестовую версию у себя («выпускай»): manifest-beta.json →
+# manifest.json (основной канал) без пересборки, затем сайт. Файлы версии уже на Диске и подписаны.
+# version — какую версию выпускаем (защита от случайного выпуска другой). Отката назад нет: только новой версией.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Версия из тестового канала, например 0.4.20'
+        required: true
+      ref:
+        description: 'Ветка для сайта и справки'
+        default: main
+permissions:
+  contents: read
+concurrency:
+  group: promote
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - name: Тестовый → основной
+        env:
+          T: ${{ secrets.YADISK_TOKEN }}
+          V: ${{ inputs.version }}
+        run: |
+          set -e
+          pip install -q cryptography
+          A="Authorization: OAuth $T"
+          API=https://cloud-api.yandex.net/v1/disk/resources
+          enc() { python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
+          get() { curl -s -L -o "$2" "$(curl -s -H "$A" "$API/download?path=$(enc "$1")" | python3 -c "import json,sys;print(json.load(sys.stdin).get('href',''))")"; }
+          get disk:/Yo-ho/manifest-beta.json beta.json
+          got=$(python3 -c "import json;print(json.load(open('beta.json'))['version'])")
+          [ "$got" = "$V" ] || { echo "::error title=Выпуск::в тестовом канале $got, а не $V"; exit 1; }
+          KEY=$(grep -o "updatePublicKey = '[^']*'" lib/core/keys.dart | cut -d"'" -f2)
+          [ "$(python3 -c "import json;print(json.load(open('beta.json'))['key'])")" = "$KEY" ] || { echo "::error title=Подпись::ключ манифеста не совпадает с ключом в программе"; exit 1; }
+          # Все файлы версии на месте и совпадают по размеру?
+          python3 - <<'PY'
+          import json, os, subprocess, sys, urllib.parse
+          m = json.load(open('beta.json'))
+          A = 'Authorization: OAuth ' + os.environ['T']
+          bad = 0
+          for f in m['files']:
+              p = urllib.parse.quote(f"disk:/Yo-ho/{m['version']}/{f['name']}", safe='')
+              r = subprocess.run(['curl', '-s', '-H', A, f'https://cloud-api.yandex.net/v1/disk/resources?path={p}&fields=size'], capture_output=True, text=True).stdout
+              if json.loads(r or '{}').get('size') != f['size']:
+                  bad += 1
+                  print(f"::error title=Яндекс Диск::нет или не тот размер: {f['name']}")
+          sys.exit(1 if bad else 0)
+          PY
+          for i in 1 2 3 4 5 6; do
+            href=$(curl -s -H "$A" "$API/upload?path=$(enc disk:/Yo-ho/manifest.json)&overwrite=true" | python3 -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 -T beta.json "$href" || true)
+            case "$code" in 200|201|202) break;; esac
+            [ $i = 6 ] && { echo "::error title=Яндекс Диск::manifest.json не загрузился"; exit 1; }
+            sleep 5
+          done
+          bash tool/disk_current.sh "$V"
+          echo "::notice title=Выпуск::Yo-ho $V — теперь у всех (программа найдёт обновление в течение получаса)"

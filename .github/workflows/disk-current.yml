@@ -1,0 +1,25 @@
+name: Отметка версии для сайта
+# Запуск вручную: disk:/Yo-ho/current/<версия> — по ней сайт понимает, какую версию отдавать (обычно ставят сборка и promote).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Версия, которая сейчас у всех'
+        required: true
+permissions:
+  contents: read
+jobs:
+  mark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: main
+          persist-credentials: false
+      - env:
+          T: ${{ secrets.YADISK_TOKEN }}
+        run: echo "::notice title=Отметка::$(bash tool/disk_current.sh '${{ inputs.version }}')"

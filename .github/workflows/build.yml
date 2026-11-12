@@ -1,0 +1,526 @@
+name: Сборка Yo-ho
+
+# Запуск вручную: notes — что нового. Код — закрытый kozenkovnikitavladimirovich-max/deep-cinema (секрет SRC_TOKEN,
+# только чтение); этот публичный репозиторий — только сборка. Журналы и артефакты публичны: секреты не печатаются,
+# ключ расшифровки журналов вылетов кладётся в закрытую папку Диска (disk:/Yo-ho-symbols), не в артефакты. Выпуск — только на Яндекс Диск
+# аккаунта Deepworks Soft (публичная папка Keys.diskPublic): каждая часть сборки (ТВ, ПК) подписывает
+# свои файлы (tool/update_sign.py, ключ выводится из ключа подписи APK) и кладёт их на Диск; последняя
+# собирает manifest.json и выкладывает его последним. Между частями — только маленькие списки подписей.
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'Что нового'
+        default: 'Обновление Yo-ho'
+      ref:
+        description: 'Ветка кода'
+        default: main
+      channel:
+        description: 'Канал: test — сначала владельцу (manifest-beta.json), all — сразу всем'
+        default: test
+      disk:
+        description: 'Выкладывать на Яндекс Диск (no — только файлы в артефакты сборки, для ручной установки)'
+        default: 'yes'
+      version:
+        description: 'Номер версии, например 0.6.9'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android TV (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - name: Номер версии
+        shell: bash
+        env:
+          V: ${{ inputs.version }}
+        run: |
+          # Версию задают при запуске. Номер сборки Android должен только расти (иначе ТВ: «Приложение не
+          # установлено»): в закрытом репозитории последней была 1091 (0.6.8 тестовая) — здесь 1100 + номер запуска.
+          echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+          echo "BUILD=$(( 1100 + ${{ github.run_number }} ))" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Платформенные файлы
+        run: |
+          set -o pipefail
+          { flutter create . --project-name deep_cinema --org app.deepcinema --platforms=android && python3 tool/patch_platforms.py android; } 2>&1 | tee -a build.log
+
+      - name: Торрент-движок для Android (TorrServer)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          gh api repos/YouROK/TorrServer/releases/latest > ts.json
+          pick() { jq -r --arg re "$1" '[.assets[] | select(.name|test($re;"i"))][0].browser_download_url // empty' ts.json; }
+          A64=$(pick 'android.*arm64'); A7=$(pick 'android.*arm(v)?7')
+          echo "arm64: $A64"; echo "arm7: $A7"
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a android/app/src/main/jniLibs/armeabi-v7a
+          [ -n "$A64" ] && curl -fsSL "$A64" -o android/app/src/main/jniLibs/arm64-v8a/libtorrserver.so
+          [ -n "$A7" ] && curl -fsSL "$A7" -o android/app/src/main/jniLibs/armeabi-v7a/libtorrserver.so
+          ls -la android/app/src/main/jniLibs/*/ || true
+          if [ -z "$A64" ]; then echo "::warning::TorrServer для Android не скачан — сборка без встроенного движка"; fi
+          exit 0
+
+      - name: Каталог трекеров для встроенного поиска
+        run: python3 tool/build_tracker_catalog.py || true
+
+      - name: Зависимости и проверка кода
+        run: |
+          set -o pipefail
+          { flutter pub get && flutter analyze --no-fatal-infos --no-fatal-warnings; } 2>&1 | tee -a build.log | tee analyze.txt
+          # Предупреждения анализатора — в аннотацию, чтобы их было видно без логов.
+          W=$(grep -E "(warning|error) •" analyze.txt | head -40 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g' || true)
+          if [ -n "$W" ]; then echo "::warning title=Анализатор::$W"; fi
+
+      - name: Единый ключ подписи (из секрета репозитория — в коде его нет)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "::error title=Подпись::Нет секрета ANDROID_KEYSTORE_B64 (Settings → Secrets and variables → Actions)"; exit 1; fi
+          echo "$KEYSTORE_B64" | base64 -d > tool/assets/signing.keystore
+
+      - name: Сборка APK
+        run: |
+          set -o pipefail
+          flutter build apk --release --obfuscate --split-debug-info=build/symbols --build-name=$VERSION --build-number=$BUILD --dart-define=APP_VERSION=$VERSION 2>&1 | tee -a build.log
+
+      - name: Ключ расшифровки журналов (Android) — в закрытую папку Диска
+        continue-on-error: true
+        shell: bash
+        env:
+          T: ${{ secrets.YADISK_TOKEN }}
+        run: |
+          # Не в артефакты: они в публичном репозитории видны всем, а этот файл снимает обфускацию.
+          # Расшифровка: flutter symbolize -i журнал.txt -d app.android-arm64.symbols
+          7z a -bso0 -bsp0 symbols-android-$VERSION.zip ./build/symbols/* > /dev/null
+          A="Authorization: OAuth $T"
+          API=https://cloud-api.yandex.net/v1/disk/resources
+          enc() { python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho-symbols")" || true
+          href=$(curl -s -H "$A" "$API/upload?path=$(enc "disk:/Yo-ho-symbols/symbols-android-$VERSION.zip")&overwrite=true" | python3 -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 900 -T symbols-android-$VERSION.zip "$href" || true)
+          case "$code" in 20[012]) echo "::notice title=Ключ расшифровки::disk:/Yo-ho-symbols/symbols-android-$VERSION.zip";; *) echo "::warning title=Ключ расшифровки::не загрузился ($code)";; esac
+          rm -f symbols-android-$VERSION.zip
+
+      - name: Переименование
+        run: cp build/app/outputs/flutter-apk/app-release.apk Yo-ho-$VERSION.apk
+
+      - name: Проверка подписи (обновления должны вставать поверх)
+        run: python3 tool/check_apk_sign.py Yo-ho-$VERSION.apk tool/assets/signing.keystore
+
+      - name: Лёгкие APK под процессор (из универсального, тот же ключ и номер сборки)
+        run: |
+          set -e
+          # Не --split-per-abi: он меняет номер сборки по процессору (2000+N), и универсальный APK потом
+          # не встал бы поверх. Берём готовый универсальный, убираем чужие библиотеки и подписываем заново.
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
+          echo "build-tools: $BT"
+          unzip -Z1 Yo-ho-$VERSION.apk | grep '^lib/' | cut -d/ -f2 | sort -u > abis.txt
+          echo "в универсальном: $(tr '\n' ' ' < abis.txt)"
+          for abi in arm64-v8a armeabi-v7a; do
+            grep -qx "$abi" abis.txt || { echo "::warning::нет библиотек $abi — лёгкий APK не делаю"; continue; }
+            cp Yo-ho-$VERSION.apk t.apk
+            for other in $(grep -vx "$abi" abis.txt); do zip -q -d t.apk "lib/$other/*"; done
+            zip -q -d t.apk 'META-INF/*.SF' 'META-INF/*.RSA' 'META-INF/*.DSA' 'META-INF/*.EC' 'META-INF/MANIFEST.MF' || true
+            "$BT/zipalign" -f -p 4 t.apk a.apk
+            "$BT/apksigner" sign --ks tool/assets/signing.keystore --ks-pass pass:android --ks-key-alias androiddebugkey --key-pass pass:android --out Yo-ho-$VERSION-$abi.apk a.apk
+            "$BT/apksigner" verify Yo-ho-$VERSION-$abi.apk
+            python3 tool/check_apk_sign.py Yo-ho-$VERSION-$abi.apk tool/assets/signing.keystore
+            rm -f t.apk a.apk
+          done
+          ls -la Yo-ho-$VERSION*.apk
+          echo "::notice title=APK::$(ls -l Yo-ho-$VERSION*.apk | awk '{printf "%s %.0f МБ; ", $9, $5/1048576}')"
+
+      - name: Показать ошибку
+        if: failure()
+        run: echo "::error title=Android::$(tail -n 60 build.log | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')"
+
+      - name: Файлы для ручной установки (без Диска)
+        if: ${{ inputs.disk == 'no' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: files-android-${{ env.VERSION }}
+          path: Yo-ho-${{ env.VERSION }}*.apk
+          retention-days: 14
+
+      - name: Подпись и Яндекс Диск
+        if: ${{ inputs.disk != 'no' }}
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          T: ${{ secrets.YADISK_TOKEN }}
+        run: |
+          set -e
+          pip install -q cryptography
+          python3 tool/update_sign.py sign-files tool/assets/signing.keystore "$VERSION" part-android.json Yo-ho-$VERSION*.apk
+          A="Authorization: OAuth $T"
+          API=https://cloud-api.yandex.net/v1/disk/resources
+          enc() { python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
+          up() { # файл → путь на Диске. Сервера загрузки Диска бывают медленными (замер: 0,16 и 13 МБ/с для одного
+                 # файла): если меньше 1 МБ/с дольше минуты — заново (новая ссылка — другой сервер); последняя попытка без ограничения.
+            for i in 1 2 3 4 5 6; do
+              lim="--speed-limit 1000000 --speed-time 60"; [ $i = 6 ] && lim=""
+              href=$(curl -s -H "$A" "$API/upload?path=$(enc "$2")&overwrite=true" | python3 -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+              code=$(curl -s -o /dev/null -w '%{http_code}' $lim --max-time 3600 -T "$1" "$href" || true)
+              case "$code" in 200|201|202) echo "$(basename "$1"): загружен"; return 0;; esac
+              echo "$(basename "$1"): попытка $i не удалась ($code)"; sleep 5
+            done
+            echo "::error title=Яндекс Диск::Не загрузился $(basename "$1")"; return 1
+          }
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho")" || true
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho/$VERSION")" || true
+          for f in Yo-ho-$VERSION*.apk; do up "$f" "disk:/Yo-ho/$VERSION/$f"; done
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.disk != 'no' }}
+        with:
+          name: part-android
+          path: part-android.json
+          retention-days: 1
+
+  windows:
+    name: Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - name: Номер версии
+        shell: bash
+        env:
+          V: ${{ inputs.version }}
+        run: |
+          # Версию задают при запуске. Номер сборки Android должен только расти (иначе ТВ: «Приложение не
+          # установлено»): в закрытом репозитории последней была 1091 (0.6.8 тестовая) — здесь 1100 + номер запуска.
+          echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+          echo "BUILD=$(( 1100 + ${{ github.run_number }} ))" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Платформенные файлы
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          set -o pipefail
+          { flutter create . --project-name deep_cinema --org app.deepcinema --platforms=windows && python tool/patch_platforms.py windows; } 2>&1 | tee -a build.log
+
+      - name: Каталог трекеров для встроенного поиска
+        shell: bash
+        run: python tool/build_tracker_catalog.py || true
+
+      - name: Сборка
+        shell: bash
+        run: |
+          set -o pipefail
+          { flutter pub get && flutter build windows --release --obfuscate --split-debug-info=build/symbols --build-name=$VERSION --build-number=$BUILD --dart-define=APP_VERSION=$VERSION; } 2>&1 | tee -a build.log
+
+      - name: Ключ расшифровки журналов (Windows) — в закрытую папку Диска
+        continue-on-error: true
+        shell: bash
+        env:
+          T: ${{ secrets.YADISK_TOKEN }}
+        run: |
+          # Не в артефакты: они в публичном репозитории видны всем, а этот файл снимает обфускацию.
+          # Расшифровка: flutter symbolize -i журнал.txt -d app.android-arm64.symbols
+          7z a -bso0 -bsp0 symbols-windows-$VERSION.zip ./build/symbols/* > /dev/null
+          A="Authorization: OAuth $T"
+          API=https://cloud-api.yandex.net/v1/disk/resources
+          enc() { python -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho-symbols")" || true
+          href=$(curl -s -H "$A" "$API/upload?path=$(enc "disk:/Yo-ho-symbols/symbols-windows-$VERSION.zip")&overwrite=true" | python -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 900 -T symbols-windows-$VERSION.zip "$href" || true)
+          case "$code" in 20[012]) echo "::notice title=Ключ расшифровки::disk:/Yo-ho-symbols/symbols-windows-$VERSION.zip";; *) echo "::warning title=Ключ расшифровки::не загрузился ($code)";; esac
+          rm -f symbols-windows-$VERSION.zip
+
+      - name: Торрент-движок для Windows (TorrServer)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          gh api repos/YouROK/TorrServer/releases/latest > ts.json
+          URL=$(jq -r '[.assets[] | select(.name|test("windows.*(amd64|x64).*\\.exe$";"i"))][0].browser_download_url // empty' ts.json)
+          echo "windows: $URL"
+          [ -n "$URL" ] && curl -fsSL "$URL" -o torrserver.exe
+          if [ ! -f torrserver.exe ]; then echo "::warning::TorrServer для Windows не скачан"; fi
+          exit 0
+
+      - name: Агрегатор раздач для Windows (Jackett)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          gh api repos/Jackett/Jackett/releases/latest > jk.json
+          URL=$(jq -r '[.assets[] | select(.name=="Jackett.Binaries.Windows.zip")][0].browser_download_url // empty' jk.json)
+          echo "jackett: $URL"
+          [ -n "$URL" ] && curl -fsSL "$URL" -o jackett.zip && 7z x -y -ojk jackett.zip > /dev/null
+          if [ ! -f jk/Jackett/JackettConsole.exe ]; then echo "::warning::Jackett для Windows не скачан"; fi
+          exit 0
+
+      - name: Помощник для трекеров с проверкой «вы не робот» (FlareSolverr)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          gh api repos/FlareSolverr/FlareSolverr/releases/latest > fs.json
+          URL=$(jq -r '[.assets[] | select(.name|test("windows.*x64.*\\.zip$";"i"))][0].browser_download_url // empty' fs.json)
+          echo "flaresolverr: $URL"
+          [ -n "$URL" ] && curl -fsSL "$URL" -o fs.zip && 7z x -y -ofs fs.zip > /dev/null
+          F=$(find fs -iname flaresolverr.exe | head -1)
+          if [ -z "$F" ]; then echo "::warning::FlareSolverr для Windows не скачан"; exit 0; fi
+          mv "$(dirname "$F")" flaresolverr_dir
+          echo "flaresolverr-$(jq -r .tag_name fs.json)" > helper.txt
+          exit 0
+
+      - name: Упаковка
+        shell: pwsh
+        run: |
+          $out = "YoHo"
+          Copy-Item -Recurse build/windows/x64/runner/Release $out
+          Rename-Item "$out/deep_cinema.exe" "Yo-ho.exe"
+          # С 0.6.1 помощники — в подпапке runtime (рядом с Yo-ho.exe только то, что нужно Windows для запуска).
+          New-Item -ItemType Directory -Force "$out/runtime" | Out-Null
+          if (Test-Path torrserver.exe) { Copy-Item torrserver.exe "$out/runtime/yoho-engine.exe" }
+          if (Test-Path jk/Jackett) { Copy-Item -Recurse jk/Jackett "$out/runtime/search" }
+          if (Test-Path flaresolverr_dir) { Copy-Item -Recurse flaresolverr_dir "$out/runtime/helper" }
+          # Свои трекеры (файлы настроек Jackett), если положены в presets/jackett/Indexers.
+          if (Test-Path presets/jackett/Indexers) {
+            New-Item -ItemType Directory -Force "$out/runtime/search-preset" | Out-Null
+            Copy-Item -Recurse presets/jackett/Indexers "$out/runtime/search-preset/Indexers"
+          }
+          # Версии тяжёлых компонентов: если они не менялись, обновление скачивает только саму программу.
+          $ts = if (Test-Path ts.json) { (Get-Content ts.json -Raw | ConvertFrom-Json).tag_name } else { '-' }
+          $jk = if (Test-Path jk.json) { (Get-Content jk.json -Raw | ConvertFrom-Json).tag_name } else { '-' }
+          $hp = if (Test-Path helper.txt) { (Get-Content helper.txt -Raw).Trim() } else { '-' }
+          # layout=runtime: раскладка папки поменялась — первое обновление на неё полное (с компонентами).
+          "torrserver=$ts`njackett=$jk`nhelper=$hp`nlayout=runtime" | Set-Content -Encoding utf8 "$out/components.txt"
+          Copy-Item "$out/components.txt" "Yo-ho-components.txt"
+
+      - name: Установщик
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          # Свежая версия — для тёмного оформления мастера установки.
+          choco upgrade innosetup -y --no-progress | Out-Null
+          $o = & $iscc /Q "/DAppVersion=$env:VERSION" "/DSourceDir=..\YoHo" installer\yoho.iss 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $msg = ($o | Select-Object -Last 15) -join ' | '
+            Write-Output "::error title=Установщик::$msg"
+            exit 1
+          }
+          # Лёгкое обновление: только программа (без торрент-движка, агрегатора и помощника).
+          $o = & $iscc /Q "/DAppVersion=$env:VERSION" "/DSourceDir=..\YoHo" "/DLite=1" installer\yoho.iss 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $msg = ($o | Select-Object -Last 15) -join ' | '
+            Write-Output "::error title=Лёгкое обновление::$msg"
+            exit 1
+          }
+          Copy-Item dist\Yo-ho-Setup-*.exe .
+          Copy-Item dist\Yo-ho-Update-*.exe .
+          Get-ChildItem Yo-ho-Setup-*.exe, Yo-ho-Update-*.exe
+
+      - name: Показать ошибку
+        if: failure()
+        shell: bash
+        run: echo "::error title=Windows::$(tail -n 60 build.log | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')"
+
+      - name: Файлы для ручной установки (без Диска)
+        if: ${{ inputs.disk == 'no' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: files-windows-${{ env.VERSION }}
+          path: |
+            Yo-ho-Update-*.exe
+            Yo-ho-Setup-*.exe
+          retention-days: 14
+
+      - name: Подпись и Яндекс Диск
+        if: ${{ inputs.disk != 'no' }}
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          T: ${{ secrets.YADISK_TOKEN }}
+          PYTHONIOENCODING: utf-8
+        run: |
+          set -e
+          python -m pip install -q cryptography
+          echo "$KEYSTORE_B64" | base64 -d > ks
+          python tool/update_sign.py sign-files ks "$VERSION" part-windows.json Yo-ho-Setup-$VERSION.exe Yo-ho-Update-$VERSION.exe
+          rm -f ks
+          A="Authorization: OAuth $T"
+          API=https://cloud-api.yandex.net/v1/disk/resources
+          enc() { python -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
+          up() { # файл → путь на Диске. Сервера загрузки Диска бывают медленными (замер: 0,16 и 13 МБ/с для одного
+                 # файла): если меньше 1 МБ/с дольше минуты — заново (новая ссылка — другой сервер); последняя попытка без ограничения.
+            for i in 1 2 3 4 5 6; do
+              lim="--speed-limit 1000000 --speed-time 60"; [ $i = 6 ] && lim=""
+              href=$(curl -s -H "$A" "$API/upload?path=$(enc "$2")&overwrite=true" | python -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+              code=$(curl -s -o /dev/null -w '%{http_code}' $lim --max-time 3600 -T "$1" "$href" || true)
+              case "$code" in 200|201|202) echo "$(basename "$1"): загружен"; return 0;; esac
+              echo "$(basename "$1"): попытка $i не удалась ($code)"; sleep 5
+            done
+            echo "::error title=Яндекс Диск::Не загрузился $(basename "$1")"; return 1
+          }
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho")" || true
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho/$VERSION")" || true
+          up Yo-ho-Update-$VERSION.exe "disk:/Yo-ho/$VERSION/Yo-ho-Update-$VERSION.exe"
+          up Yo-ho-Setup-$VERSION.exe "disk:/Yo-ho/$VERSION/Yo-ho-Setup-$VERSION.exe"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.disk != 'no' }}
+        with:
+          name: part-windows
+          path: |
+            part-windows.json
+            Yo-ho-components.txt
+          retention-days: 1
+
+  publish:
+    name: Выпуск на Яндекс Диск
+    needs: [android, windows]
+    if: ${{ inputs.disk != 'no' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - name: Номер версии
+        env:
+          V: ${{ inputs.version }}
+        run: echo "VERSION=$V" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: parts
+          merge-multiple: true
+
+      - name: manifest.json — последним
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          T: ${{ secrets.YADISK_TOKEN }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          set -e
+          pip install -q cryptography
+          echo "$KEYSTORE_B64" | base64 -d > ks
+          printf '%s\n' "$NOTES" > notes.txt
+          python3 tool/update_sign.py merge ks "$VERSION" notes.txt manifest.json parts/Yo-ho-components.txt -- parts/part-android.json parts/part-windows.json
+          rm -f ks
+          grep -q "\"version\": \"$VERSION\"" manifest.json
+          want=$(grep -o "updatePublicKey = '[^']*'" lib/core/keys.dart | cut -d"'" -f2)
+          got=$(python3 -c "import json;print(json.load(open('manifest.json'))['key'])")
+          [ "$got" = "$want" ] || { echo "::error title=Подпись::ключ сборки не совпадает с ключом в программе"; exit 1; }
+          A="Authorization: OAuth $T"
+          API=https://cloud-api.yandex.net/v1/disk/resources
+          enc() { python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
+          up() { # файл → путь на Диске. Сервера загрузки Диска бывают медленными (замер: 0,16 и 13 МБ/с для одного
+                 # файла): если меньше 1 МБ/с дольше минуты — заново (новая ссылка — другой сервер); последняя попытка без ограничения.
+            for i in 1 2 3 4 5 6; do
+              lim="--speed-limit 1000000 --speed-time 60"; [ $i = 6 ] && lim=""
+              href=$(curl -s -H "$A" "$API/upload?path=$(enc "$2")&overwrite=true" | python3 -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+              code=$(curl -s -o /dev/null -w '%{http_code}' $lim --max-time 3600 -T "$1" "$href" || true)
+              case "$code" in 200|201|202) echo "$(basename "$1"): загружен"; return 0;; esac
+              echo "$(basename "$1"): попытка $i не удалась ($code)"; sleep 5
+            done
+            echo "::error title=Яндекс Диск::Не загрузился $(basename "$1")"; return 1
+          }
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho")" || true
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho/$VERSION")" || true
+          # Все файлы версии на месте и совпадают по размеру?
+          python3 - <<'PY'
+          import json, os, subprocess, sys, urllib.parse
+          m = json.load(open('manifest.json'))
+          A = 'Authorization: OAuth ' + os.environ['T']
+          bad = 0
+          for f in m['files']:
+              p = urllib.parse.quote(f"disk:/Yo-ho/{m['version']}/{f['name']}", safe='')
+              r = subprocess.run(['curl', '-s', '-H', A, f'https://cloud-api.yandex.net/v1/disk/resources?path={p}&fields=size'], capture_output=True, text=True).stdout
+              size = json.loads(r or '{}').get('size')
+              if size != f['size']:
+                  bad += 1
+                  print(f"::error title=Яндекс Диск::{f['name']}: на Диске {size}, должно быть {f['size']}")
+          sys.exit(1 if bad else 0)
+          PY
+          # Тестовый канал: версия сначала у владельца («Тестовые версии» в программе). Всем — запуском
+          # «Выпустить для всех» (promote.yml): он копирует manifest-beta.json в manifest.json без пересборки.
+          up manifest.json "disk:/Yo-ho/manifest-beta.json"
+          if [ "${{ inputs.channel }}" = "all" ]; then up manifest.json "disk:/Yo-ho/manifest.json"; bash tool/disk_current.sh "$VERSION"; fi
+          # Какая версия сейчас у всех (основной канал) — её папку не трогаем, даже если она старая.
+          MAIN=$(curl -s -L "$(curl -s -H "$A" "$API/download?path=$(enc "disk:/Yo-ho/manifest.json")" | python3 -c "import json,sys;print(json.load(sys.stdin).get('href',''))")" | python3 -c "import json,sys;print(json.load(sys.stdin).get('version',''))" 2>/dev/null || true)
+          echo "основной канал: ${MAIN:-нет}"
+          # Старые версии: оставляем три последние (насовсем, мимо корзины — место 5 ГБ).
+          curl -s -H "$A" "$API?path=$(enc "disk:/Yo-ho")&limit=200&fields=_embedded.items.name,_embedded.items.type" > list.json
+          MAIN="$MAIN" python3 - > old.txt <<'PY'
+          import json, os, re
+          items = json.load(open('list.json')).get('_embedded', {}).get('items', [])
+          vers = [i['name'] for i in items if i.get('type') == 'dir' and re.fullmatch(r'\d+(\.\d+)*', i['name'])]
+          vers.sort(key=lambda v: [int(x) for x in v.split('.')])
+          print('\n'.join(v for v in vers[:-3] if v != os.environ.get('MAIN')))
+          PY
+          while read -r v; do
+            [ -n "$v" ] && curl -s -o /dev/null -X DELETE -H "$A" "$API?path=$(enc "disk:/Yo-ho/$v")&permanently=true" && echo "удалена $v"
+          done < old.txt
+          if [ "${{ inputs.channel }}" = "all" ]; then
+            echo "::notice title=Выпуск::Yo-ho $VERSION — у всех"
+          else
+            echo "::notice title=Выпуск::Yo-ho $VERSION — в тестовом канале (у владельца). Всем — запуск «Выпустить для всех»."
+          fi
+      - name: Владельцу в Telegram — тестовая версия готова
+        if: ${{ inputs.channel != 'all' }}
+        continue-on-error: true
+        env:
+          TG: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          # Кнопка «Выпустить для всех» работает через бота (мост, секрет GH_TOKEN); без него бот подскажет.
+          [ -z "$TG" ] || [ -z "$CHAT" ] && exit 0
+          python3 - <<'PY' > tg.json
+          import json, os
+          v = os.environ.get('VERSION', '')
+          text = f"🧪 Тестовая Yo-ho {v} готова — придёт обновлением на ваши устройства (или скачайте: deepworks-soft.github.io/tv?v={v}).\n{os.environ.get('NOTES', '')}".strip()
+          print(json.dumps({"chat_id": os.environ['CHAT'], "text": text, "reply_markup": {"inline_keyboard": [[{"text": f"🚀 Выпустить {v} для всех", "callback_data": f"promote:{v}"}]]}}, ensure_ascii=False))
+          PY
+          curl -s -o /dev/null -H 'content-type: application/json' --data @tg.json "https://api.telegram.org/bot$TG/sendMessage" || true

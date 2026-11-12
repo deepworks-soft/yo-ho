@@ -1,0 +1,41 @@
+name: Тесты кода
+# Запуск вручную: flutter test по ветке закрытого репозитория. Итог — в заметках запуска.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ветка'
+        default: main
+      tests:
+        description: 'Файлы тестов через пробел'
+        default: 'test/update_sign_test.dart'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Тесты
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          set -o pipefail
+          flutter pub get > pub.log 2>&1 || { echo "::error title=pub get::$(tail -n 20 pub.log | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"; exit 1; }
+          if flutter test $TESTS --reporter expanded > t.log 2>&1; then
+            echo "::notice title=Тесты::$(grep -E '✓|\+[0-9]+' t.log | tail -n 1)"
+          else
+            echo "::error title=Тесты::$(grep -vE '^\s*$' t.log | tail -n 40 | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
+            exit 1
+          fi
