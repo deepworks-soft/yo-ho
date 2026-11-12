@@ -17,12 +17,12 @@ jobs:
         env:
           IDS: ${{ inputs.ids }}
         run: |
-          B=https://deep-cinema.kozenkov-nikita-vladimirovich.workers.dev
+          B=https://deep-cinema.deepworks-soft.workers.dev
           a=${IDS%-*}; b=${IDS#*-}
           out=""
           for i in $(seq "$a" "$b"); do
             for f in tile banner cover; do
-              r=$(curl -s -o /tmp/x -w '%{http_code} %{size_download} %{time_total}' "$B/img/$i-$f-1.jpg")
+              r=$(curl -s -m 30 -o /tmp/x -w '%{http_code} %{size_download} %{time_total}' "$B/img/$i-$f-1.jpg") || true
               set -- $r
               [ "$1" = 404 ] && continue
               out="$out$i-$f: $1, $(( $2 / 1024 )) КБ, $3 с%0A"
