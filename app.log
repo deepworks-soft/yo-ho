@@ -1,0 +1,546 @@
+
+(app.deepcinema.deep_cinema:7058): dbind-WARNING **: 22:55:03.790: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+
+(app.deepcinema.deep_cinema:7058): Atk-CRITICAL **: 22:55:04.374: atk_socket_embed: assertion 'plug_id != NULL' failed
+[IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(126)] Using the Impeller rendering backend (OpenGLESSDF).
+package:media_kit_libs_linux registered.
+DCCHECK enum=series,yandex json=series
+
+(app.deepcinema.deep_cinema:7058): libayatana-appindicator-WARNING **: 22:55:05.462: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+tray init: MissingPluginException(No implementation found for method setToolTip on channel tray_manager)
+DCFPS n=0 img=0/0.0MB live=2
+[W][22:55:06.619491] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:06.619552] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+images via: direct
+dpi: не нужен: мост открывается напрямую
+[W][22:55:06.877547] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:06.877599] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+img напрямую: ответ 404
+bridge: большие ответы проходят
+img запасной TMDB: ответ 404
+DCFPS n=0 img=2/2.1MB live=3
+img мост: ответ 401 {"error":"Ð²Ð¾Ð¹Ð´Ð¸ÑÐµ Ð² Yo-ho","auth":true}
+DCSCROLL revealTop pageTop=538 pixels=0 vh=900
+DCSCROLL fullyVisible -> no scroll
+[W][22:55:07.371384] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:07.371431] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+img напрямую: ответ 404
+[W][22:55:07.419093] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:07.419140] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+img напрямую: ответ 404
+img напрямую: ответ 404
+img напрямую: ответ 404
+img запасной TMDB: ответ 404
+img напрямую: ответ 404
+img напрямую: ответ 404
+img запасной TMDB: ответ 404
+img мост: ответ 401 {"error":"Ð²Ð¾Ð¹Ð´Ð¸ÑÐµ Ð² Yo-ho","auth":true}
+[W][22:55:07.818269] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:07.818313] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+DCFPS n=1 late=1 b=0.0/0.0/0.0 r=1428.1/1428.1/1428.1 sumB=0.0 sumR=1428.1 img=2/2.1MB live=7
+DCFPS n=0 img=2/2.1MB live=2
+DCFPS n=0 img=2/2.1MB live=2
+DCSCROLL revealTop pageTop=140 pixels=0 vh=605
+DCSCROLL ensureVisible pixels=0 max=0 vh=605
+[W][22:55:10.436504] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:10.436990] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+DCFPS n=3 late=3 b=2.1/66.1/66.1 r=481.1/3026.3/3026.3 sumB=69.5 sumR=3567.6 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=4 late=4 b=5.6/23.3/23.3 r=478.3/506.0/506.0 sumB=30.7 sumR=1856.1 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=1 late=1 b=0.6/0.6/0.6 r=477.5/477.5/477.5 sumB=0.6 sumR=477.5 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCSCROLL revealTop pageTop=76 pixels=0 vh=605
+DCSCROLL ensureVisible pixels=0 max=0 vh=605
+DCFOCUS key=Arrow Up scroll=0/605 mode=traditional node=FocusNode rect=41,117 314x58 widget=Focus up=MouseRegion<_ActionsScope<Actions<Semantics<_FocusInheritedScope<Focus
+[W][22:55:19.088720] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:19.088779] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+DCFPS n=5 late=5 b=0.4/1.1/1.1 r=482.8/516.0/516.0 sumB=2.7 sumR=2435.3 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=3 late=3 b=0.6/0.9/0.9 r=478.6/482.6/482.6 sumB=1.9 sumR=1434.6 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCSHOT m1-search
+DCSCROLL revealTop pageTop=9 pixels=0 vh=605
+DCSCROLL ensureVisible pixels=0 max=0 vh=605
+DCFOCUS key=Arrow Up scroll=0/605 mode=traditional node=FocusNode rect=305,50 46x46 widget=Focus up=MouseRegion<_ActionsScope<Actions<Semantics<_FocusInheritedScope<Focus
+[W][22:55:23.990443] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:23.990500] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=3 late=3 b=0.6/0.7/0.7 r=474.2/479.9/479.9 sumB=1.7 sumR=1422.0 img=2/2.1MB live=0
+DCFPS n=1 late=1 b=0.2/0.2/0.2 r=465.8/465.8/465.8 sumB=0.2 sumR=465.8 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCSHOT m2-bell
+DCSCROLL revealTop pageTop=76 pixels=0 vh=605
+DCSCROLL ensureVisible pixels=0 max=0 vh=605
+DCFOCUS key=Arrow Down scroll=0/605 mode=traditional node=FocusNode rect=41,117 314x58 widget=Focus up=MouseRegion<_ActionsScope<Actions<Semantics<_FocusInheritedScope<Focus
+[W][22:55:28.810639] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:28.811126] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=3 late=3 b=0.6/0.6/0.6 r=475.9/483.5/483.5 sumB=1.8 sumR=1432.3 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCSHOT m3-back-down
+DCFPS n=0 img=2/2.1MB live=0
+DCSCROLL revealTop pageTop=9 pixels=0 vh=605
+DCSCROLL ensureVisible pixels=0 max=0 vh=605
+DCFOCUS key=Arrow Up scroll=0/605 mode=traditional node=FocusNode rect=305,50 46x46 widget=Focus up=MouseRegion<_ActionsScope<Actions<Semantics<_FocusInheritedScope<Focus
+[W][22:55:33.670399] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:33.670452] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=3 late=3 b=0.6/0.7/0.7 r=477.5/482.6/482.6 sumB=1.8 sumR=1430.0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFOCUS key=Enter scroll=- mode=traditional node=FocusScopeNode rect=0,0 1600x900 widget=FocusScope up=Positioned<Stack<MouseRegion<KeyedSubtree<_BodyBuilder<MediaQuery
+[W][22:55:37.016110] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:37.016513] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+DCSCROLL revealTop pageTop=74 pixels=0 vh=310
+DCSCROLL fullyVisible -> no scroll
+[W][22:55:37.084162] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:37.084225] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=4
+DCFPS n=6 late=6 b=1.6/12.9/12.9 r=182.1/526.8/526.8 sumB=17.8 sumR=1710.9 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCSHOT m4-notifications
+
+(app.deepcinema.deep_cinema:7274): dbind-WARNING **: 22:55:43.733: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+
+(app.deepcinema.deep_cinema:7274): Atk-CRITICAL **: 22:55:43.790: atk_socket_embed: assertion 'plug_id != NULL' failed
+[IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(126)] Using the Impeller rendering backend (OpenGLESSDF).
+package:media_kit_libs_linux registered.
+DCCHECK enum=series,yandex json=series
+
+(app.deepcinema.deep_cinema:7274): libayatana-appindicator-WARNING **: 22:55:43.965: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+tray init: MissingPluginException(No implementation found for method setToolTip on channel tray_manager)
+[W][22:55:44.067889] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:44.067967] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+[W][22:55:44.188889] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:44.188947] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+images via: direct
+dpi: не нужен: мост открывается напрямую
+img напрямую: ответ 404
+bridge: большие ответы проходят
+img запасной TMDB: ответ 404
+img мост: ответ 401 {"error":"Ð²Ð¾Ð¹Ð´Ð¸ÑÐµ Ð² Yo-ho","auth":true}
+DCFPS n=0 img=2/2.1MB live=2
+DCFPS n=0 img=2/2.1MB live=2
+DCBANNER Фильм 1101: открываю трейлер
+[W][22:55:46.224063] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:46.224113] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+DCSCROLL revealTop pageTop=538 pixels=0 vh=900
+DCSCROLL fullyVisible -> no scroll
+media_kit: VideoOutput: EGL display or context is invalid.
+media_kit: VideoOutput: S/W rendering.
+VideoOutput.Resize
+{handle: 94254259590656, id: 94254256932288, rect: {left: 0, top: 0, width: 1, height: 1}}
+NativeVideoController: Texture ID: 94254256932288
+DCBANNER открыт (mpv)
+img напрямую: ответ 404
+[W][22:55:46.751551] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:46.753198] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+Failed to open VDPAU backend libvdpau_nvidia.so: cannot open shared object file: No such file or directory
+[W][22:55:46.785826] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:46.785881] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+img напрямую: ответ 404
+img напрямую: ответ 404
+img напрямую: ответ 404
+img напрямую: ответ 404
+img напрямую: ответ 404
+img запасной TMDB: ответ 404
+[W][22:55:46.820010] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:55:46.820054] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+img запасной TMDB: ответ 404
+DCFPS n=1 late=1 b=0.0/0.0/0.0 r=2474.5/2474.5/2474.5 sumB=0.0 sumR=2474.5 img=2/2.1MB live=18
+img мост: ответ 401 {"error":"Ð²Ð¾Ð¹Ð´Ð¸ÑÐµ Ð² Yo-ho","auth":true}
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=3 late=3 b=2.3/72.8/72.8 r=617.9/1145.8/1145.8 sumB=76.4 sumR=1830.0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCBANNER пошли кадры: 0:00:00.280000
+DCBANNER Фильм 1101: трейлер показан через 3742 мс
+VideoOutput.Resize
+{handle: 94254259590656, id: 94254256932288, rect: {left: 0, top: 0, width: 1280, height: 720}}
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=3 late=3 b=0.8/1.3/1.3 r=606.5/613.3/613.3 sumB=2.3 sumR=1755.7 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=15
+DCFPS n=0 img=2/2.1MB live=8
+DCFPS n=2 late=2 b=23.5/23.5/23.5 r=460.9/460.9/460.9 sumB=24.1 sumR=919.9 img=2/2.1MB live=4
+DCFPS n=0 img=2/2.1MB live=2
+DCSHOT b1-banner-early
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=2 late=2 b=1.7/1.7/1.7 r=567.2/567.2/567.2 sumB=2.1 sumR=1012.2 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCFPS n=0 img=2/2.1MB live=0
+DCSHOT b2-banner-trailer
+DCFPS n=0 img=2/2.1MB live=0
+
+(app.deepcinema.deep_cinema:7434): dbind-WARNING **: 22:56:26.518: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+
+(app.deepcinema.deep_cinema:7434): Atk-CRITICAL **: 22:56:26.574: atk_socket_embed: assertion 'plug_id != NULL' failed
+[IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(126)] Using the Impeller rendering backend (OpenGLESSDF).
+package:media_kit_libs_linux registered.
+DCCHECK enum=series,yandex json=series
+
+(app.deepcinema.deep_cinema:7434): libayatana-appindicator-WARNING **: 22:56:26.748: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
+tray init: MissingPluginException(No implementation found for method setToolTip on channel tray_manager)
+[W][22:56:26.853979] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:56:26.854061] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+images via: direct
+[W][22:56:26.983374] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:56:26.983607] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+dpi: не нужен: мост открывается напрямую
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+img напрямую: ответ 404
+DCSCROLL revealTop pageTop=538 pixels=0 vh=900
+DCSCROLL fullyVisible -> no scroll
+[W][22:56:27.239453] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:56:27.239507] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+img напрямую: ответ 404
+bridge: большие ответы проходят
+[W][22:56:27.276158] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:56:27.276318] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+img напрямую: ответ 404
+img напрямую: ответ 404
+img напрямую: ответ 404
+img напрямую: ответ 404
+img запасной TMDB: ответ 404
+img запасной TMDB: ответ 404
+img запасной TMDB: ответ 404
+img мост: ответ 401 {"error":"Ð²Ð¾Ð¹Ð´Ð¸ÑÐµ Ð² Yo-ho","auth":true}
+img запасной TMDB: ответ 404
+img мост: ответ 401 {"error":"Ð²Ð¾Ð¹Ð´Ð¸ÑÐµ Ð² Yo-ho","auth":true}
+DCFPS n=1 late=1 b=0.0/0.0/0.0 r=232.2/232.2/232.2 sumB=0.0 sumR=232.2 img=2/2.1MB live=7
+DCFPS n=0 img=2/2.1MB live=2
+[W][22:56:29.133705] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:56:29.133760] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+media_kit: VideoOutput: EGL display or context is invalid.
+media_kit: VideoOutput: S/W rendering.
+VideoOutput.Resize
+{handle: 97153590430896, id: 97153597110976, rect: {left: 0, top: 0, width: 1, height: 1}}
+NativeVideoController: Texture ID: 97153597110976
+DCSTATS Видео: — —×— | Движок: mpv · декодер: — · вывод: — | Кадры: фильм — · экран — Гц | Потеряно кадров: вывод — · декодер — | Звук: — · — кан. · — | Буфер: — с · 0.0 Мбит/с | Рассинхрон: — с
+Failed to open VDPAU backend libvdpau_nvidia.so: cannot open shared object file: No such file or directory
+[W][22:56:29.259961] pw.conf      | [          conf.c: 1182 try_load_conf()] can't load config client.conf: No such file or directory
+[E][22:56:29.260976] pw.conf      | [          conf.c: 1215 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+ALSA lib confmisc.c:855:(parse_card) [error.core] cannot find card '0'
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) [error.core] error evaluating strings
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) [error.core] error evaluating name
+ALSA lib conf.c:5211:(_snd_config_evaluate) [error.core] function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5734:(snd_config_expand) [error.core] Evaluate error: No such file or directory
+ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) [error.pcm] Unknown PCM default
+Cannot connect to server socket err = No such file or directory
+Cannot connect to server request channel
+jack server is not running or cannot be started
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+JackShmReadWritePtr::~JackShmReadWritePtr - Init not done for -1, skipping unlock
+ALSA lib confmisc.c:165:(snd_config_get_card) [error.core] Cannot get card index for 0
+couldn't open play stream: No such file or directory
+player error (mpv): Could not open/initialize audio device -> no sound.
+DCFPS n=4 late=4 b=1.7/67.9/67.9 r=534.1/801.0/801.0 sumB=72.8 sumR=1931.2 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 119 с · 0.2 Мбит/с | Рассинхрон: — с
+VideoOutput.Resize
+{handle: 97153590430896, id: 97153597110976, rect: {left: 0, top: 0, width: 1280, height: 720}}
+DCFPS n=0 img=2/2.1MB live=8
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 118 с · 323.8 Мбит/с | Рассинхрон: — с
+DCFPS n=4 late=4 b=9.2/27.8/27.8 r=575.1/704.3/704.3 sumB=39.9 sumR=2141.1 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 117 с · 323.6 Мбит/с | Рассинхрон: — с
+DCFPS n=0 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 116 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=0 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 115 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=5 late=5 b=2.2/2.4/2.4 r=307.8/335.5/335.5 sumB=9.4 sumR=1569.1 img=2/2.1MB live=16
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 114 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=7 late=4 b=2.1/2.4/18.1 r=20.7/310.6/316.0 sumB=26.8 sumR=702.2 img=2/2.1MB live=8
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 113 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=7 late=0 b=0.3/1.9/2.0 r=10.4/10.7/11.4 sumB=6.3 sumR=73.9 img=2/2.1MB live=3
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 112 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=7 late=0 b=0.3/1.7/2.0 r=10.7/11.1/11.8 sumB=4.9 sumR=74.8 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 111 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=5 late=0 b=1.5/1.9/1.9 r=10.4/13.5/13.5 sumB=5.7 sumR=54.1 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 110 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=4 late=0 b=1.6/2.0/2.0 r=11.0/11.4/11.4 sumB=4.3 sumR=42.6 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 109 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=5 late=0 b=0.3/1.8/1.8 r=10.2/11.0/11.0 sumB=4.4 sumR=51.3 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 108 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=0 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 107 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=5 late=0 b=1.6/4.3/4.3 r=9.9/10.7/10.7 sumB=8.4 sumR=50.4 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 106 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=6 late=0 b=0.3/1.6/1.6 r=10.3/12.3/12.3 sumB=4.2 sumR=62.9 img=2/2.1MB live=1
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 105 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=4 late=0 b=1.4/1.7/1.7 r=10.9/11.4/11.4 sumB=3.7 sumR=43.2 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 104 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=7 late=0 b=1.4/1.6/1.7 r=10.3/11.2/12.7 sumB=6.9 sumR=74.5 img=2/2.1MB live=1
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 103 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=5 late=0 b=0.3/2.1/2.1 r=10.2/11.0/11.0 sumB=4.3 sumR=51.2 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 102 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=6 late=0 b=0.4/1.6/1.6 r=10.4/11.0/11.0 sumB=4.2 sumR=61.6 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 101 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=0 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 100 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=5 late=0 b=1.7/2.2/2.2 r=11.4/12.7/12.7 sumB=6.2 sumR=57.9 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 99 с · 0.0 Мбит/с | Рассинхрон: — с
+DCFPS n=5 late=0 b=0.3/1.8/1.8 r=10.5/11.2/11.2 sumB=4.4 sumR=52.9 img=2/2.1MB live=0
+DCSTATS Видео: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 1280×720 | Движок: mpv · декодер: no · вывод: libmpv | Кадры: фильм 25.000 · экран — Гц | Потеряно кадров: вывод 1 · декодер 0 | Звук: — · — кан. · — | Буфер: 98 с · 0.0 Мбит/с | Рассинхрон: — с
+DCSHOT p1-player
+DCFPS n=6 late=0 b=1.4/1.8/1.8 r=10.6/13.2/13.2 sumB=5.8 sumR=65.5 img=2/2.1MB live=0
