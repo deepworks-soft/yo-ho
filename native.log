@@ -1,0 +1,145 @@
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+11-12 23:03:48.543  4589  4589 I ExoPlayerImpl: Init a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:03:48.545  4589  4589 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:03:56.083  4589  4747 I DcExo   : fps: измерено 23.977987 → 23.976
+11-12 23:05:07.136  4589  4589 I ExoPlayerImpl: Release a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29] [media3.common, media3.exoplayer, media3.decoder, media3.ui, media3.datasource, media3.extractor, media3.decoder.ffmpeg]
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+11-12 23:06:40.995  7832  7832 I ExoPlayerImpl: Init a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:06:40.996  7832  7832 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:06:49.634  7832  7990 I DcExo   : fps: измерено 23.980816 → 23.976
+11-12 23:06:52.161  7832  7832 I ExoPlayerImpl: Release a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29] [media3.common, media3.exoplayer, media3.decoder, media3.ui, media3.datasource, media3.extractor, media3.decoder.ffmpeg]
+11-12 23:06:58.947  7832  7832 I ExoPlayerImpl: Init 287b34f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:06:58.948  7832  7832 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:07:07.553  7832  8312 I DcExo   : fps: измерено 23.974638 → 23.976
+--------- beginning of main
+--------- beginning of system
+11-12 23:07:16.877  8572  8572 I ExoPlayerImpl: Init 36754dc [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:07:16.879  8572  8572 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:07:25.483  8572  8743 I DcExo   : fps: измерено 23.974638 → 23.976
+--------- beginning of main
+11-12 23:07:25.483  8572  8743 I DcExo   : fps: измерено 23.974638 → 23.976
+--------- beginning of system
+11-12 23:07:33.625  9035  9035 I ExoPlayerImpl: Init 36754dc [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:07:33.627  9035  9035 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:07:41.971  9035  9219 I DcExo   : fps: измерено 25.0 → 25.0
+11-12 23:08:17.208  9035  9035 I ExoPlayerImpl: Release 36754dc [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29] [media3.common, media3.exoplayer, media3.decoder, media3.ui, media3.datasource, media3.extractor, media3.decoder.ffmpeg]
+11-12 23:08:28.730  9035  9035 I ExoPlayerImpl: Init a6ab8e7 [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:08:28.730  9035  9035 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:08:33.842  9035  9035 I ExoPlayerImpl: Release a6ab8e7 [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29] [media3.common, media3.exoplayer, media3.decoder, media3.ui, media3.datasource, media3.extractor, media3.decoder.ffmpeg]
+--------- beginning of main
+--------- beginning of system
+11-12 23:08:44.683 10586 10586 I ExoPlayerImpl: Init 36754dc [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:08:44.686 10586 10586 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:08:53.386 10586 10739 I DcExo   : fps: измерено 23.974638 → 23.976
+11-12 23:08:56.203 10586 10586 I ExoPlayerImpl: Release 36754dc [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29] [media3.common, media3.exoplayer, media3.decoder, media3.ui, media3.datasource, media3.extractor, media3.decoder.ffmpeg]
+11-12 23:08:56.279 10586 10586 I ExoPlayerImpl: Init 5e99229 [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:08:56.279 10586 10586 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:09:01.321 10586 10586 I ExoPlayerImpl: Release 5e99229 [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29] [media3.common, media3.exoplayer, media3.decoder, media3.ui, media3.datasource, media3.extractor, media3.decoder.ffmpeg]
+--------- beginning of main
+--------- beginning of system
+11-12 23:09:13.127 11213 11213 I ExoPlayerImpl: Init a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:09:13.128 11213 11213 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:09:19.675 11213 11375 I DcExo   : fps: измерено 25.0 → 25.0
+--------- beginning of main
+--------- beginning of system
+--------- beginning of crash
+11-12 23:09:30.335 11869 11892 F libc    : Fatal signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0 in tid 11892 (1.raster), pid 11869 (ema.deep_cinema)
+11-12 23:09:30.364 11904 11904 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+11-12 23:09:30.364 11904 11904 F DEBUG   : Build fingerprint: 'Android/sdk_phone_x86_64/generic_x86_64:10/QSR1.210820.001/7663313:userdebug/test-keys'
+11-12 23:09:30.364 11904 11904 F DEBUG   : Revision: '0'
+11-12 23:09:30.364 11904 11904 F DEBUG   : ABI: 'x86_64'
+11-12 23:09:30.365 11904 11904 F DEBUG   : Timestamp: 2026-11-12 23:09:30+0000
+11-12 23:09:30.365 11904 11904 F DEBUG   : pid: 11869, tid: 11892, name: 1.raster  >>> app.deepcinema.deep_cinema <<<
+11-12 23:09:30.365 11904 11904 F DEBUG   : uid: 10116
+11-12 23:09:30.365 11904 11904 F DEBUG   : signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
+11-12 23:09:30.365 11904 11904 F DEBUG   : Cause: null pointer dereference
+11-12 23:09:30.365 11904 11904 F DEBUG   :     rax 0000000000000000  rbx 0000000000001000  rcx 0000000000000000  rdx 0000001800000004
+11-12 23:09:30.365 11904 11904 F DEBUG   :     r8  00000000fffffffd  r9  7000000000000000  r10 fffffffffffffd01  r11 0000000000000000
+11-12 23:09:30.365 11904 11904 F DEBUG   :     r12 00007e158f6025f8  r13 00007e158f76f740  r14 0000000000000002  r15 00007e1582c3dc08
+11-12 23:09:30.365 11904 11904 F DEBUG   :     rdi 00007e158f602670  rsi 000000000000000c
+11-12 23:09:30.365 11904 11904 F DEBUG   :     rbp 0000000000000002  rsp 00007e15380abe50  rip 00007e16129f22c5
+11-12 23:09:30.371 11904 11904 F DEBUG   : 
+11-12 23:09:30.371 11904 11904 F DEBUG   : backtrace:
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #00 pc 00000000000702c5  /apex/com.android.runtime/lib64/bionic/libc.so (extent_recycle+1429) (BuildId: b5c6019a3b4ea61b5e9a2f56319b584e)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #01 pc 000000000006fd28  /apex/com.android.runtime/lib64/bionic/libc.so (je_extents_alloc+56) (BuildId: b5c6019a3b4ea61b5e9a2f56319b584e)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #02 pc 0000000000059c3c  /apex/com.android.runtime/lib64/bionic/libc.so (arena_bin_malloc_hard+316) (BuildId: b5c6019a3b4ea61b5e9a2f56319b584e)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #03 pc 00000000000598b3  /apex/com.android.runtime/lib64/bionic/libc.so (je_arena_tcache_fill_small+323) (BuildId: b5c6019a3b4ea61b5e9a2f56319b584e)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #04 pc 0000000000086f01  /apex/com.android.runtime/lib64/bionic/libc.so (je_tcache_alloc_small_hard+17) (BuildId: b5c6019a3b4ea61b5e9a2f56319b584e)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #05 pc 000000000004dfb5  /apex/com.android.runtime/lib64/bionic/libc.so (je_malloc+1189) (BuildId: b5c6019a3b4ea61b5e9a2f56319b584e)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #06 pc 000000000004a37a  /apex/com.android.runtime/lib64/bionic/libc.so (malloc+26) (BuildId: b5c6019a3b4ea61b5e9a2f56319b584e)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #07 pc 0000000000071469  /system/lib64/vndk-sp-29/libc++.so (operator new(unsigned long)+25) (BuildId: bef7a4c949443d9e9521b20a12d053cc)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #08 pc 00000000000100cd  /vendor/lib64/egl/libEGL_emulation.so (getExtStringArray()+829) (BuildId: 3e3b67829ce59a3304b4a4e82d8a3d93)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #09 pc 000000000000fa21  /vendor/lib64/egl/libEGL_emulation.so (getGLString(int)+273) (BuildId: 3e3b67829ce59a3304b4a4e82d8a3d93)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #10 pc 000000000000f848  /vendor/lib64/egl/libEGL_emulation.so (eglMakeCurrent+2760) (BuildId: 3e3b67829ce59a3304b4a4e82d8a3d93)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #11 pc 0000000000018604  /system/lib64/libEGL.so (android::egl_display_t::makeCurrent(android::egl_context_t*, android::egl_context_t*, void*, void*, void*, void*, void*, void*)+228) (BuildId: 52296f301d565ccd1f8bf0ae327f48fc)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #12 pc 0000000000022c76  /system/lib64/libEGL.so (android::eglMakeCurrentImpl(void*, void*, void*, void*)+502) (BuildId: 52296f301d565ccd1f8bf0ae327f48fc)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #13 pc 00000000005201ed  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #14 pc 0000000000539386  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #15 pc 0000000000a5b9e7  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #16 pc 00000000005395c6  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #17 pc 000000000052af17  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #18 pc 00000000009b39bf  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #19 pc 0000000000555125  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #20 pc 0000000000559b05  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #21 pc 0000000000018a31  /system/lib64/libutils.so (android::Looper::pollInner(int)+961) (BuildId: 20c01acb58e07a2d146da9c81d857370)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #22 pc 00000000000185aa  /system/lib64/libutils.so (android::Looper::pollOnce(int, int*, int*, void**)+42) (BuildId: 20c01acb58e07a2d146da9c81d857370)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #23 pc 00000000000148e6  /system/lib64/libandroid.so (ALooper_pollOnce+86) (BuildId: 26eb98f8ceac5753d8e064b1b4fdcb46)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #24 pc 0000000000559c17  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #25 pc 0000000000557468  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #26 pc 0000000000557240  /data/app/app.deepcinema.deep_cinema-te02xQy1C5mjc11L9pGxUA==/lib/x86_64/libflutter.so (BuildId: fe9fabe9dfbabfe3052603d3b85472e52c72de1f)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #27 pc 0000000000100fce  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+30) (BuildId: b5c6019a3b4ea61b5e9a2f56319b584e)
+11-12 23:09:30.371 11904 11904 F DEBUG   :       #28 pc 0000000000098fe7  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+55) (BuildId: b5c6019a3b4ea61b5e9a2f56319b584e)
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+11-12 23:11:41.285 13301 13301 I ExoPlayerImpl: Init a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:11:41.286 13301 13301 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:11:47.936 13301 13464 I DcExo   : fps: измерено 23.977987 → 23.976
+--------- beginning of main
+--------- beginning of system
+11-12 23:12:01.258 13929 13929 I ExoPlayerImpl: Init a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:12:01.260 13929 13929 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:12:18.425 14181 14181 I DcExo   : DCMARK xvid-ours
+--------- beginning of main
+11-12 23:12:18.425 14181 14181 I DcExo   : DCMARK xvid-ours
+--------- beginning of system
+11-12 23:12:24.134 14203 14203 I ExoPlayerImpl: Init a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:12:24.135 14203 14203 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:12:30.620 14203 14362 I DcExo   : fps: измерено 25.0 → 25.0
+11-12 23:13:04.701 14502 14502 I DcExo   : DCMARK xvid-stock
+--------- beginning of main
+11-12 23:13:04.701 14502 14502 I DcExo   : DCMARK xvid-stock
+--------- beginning of system
+11-12 23:13:08.922 14524 14524 I ExoPlayerImpl: Init a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:13:08.925 14524 14524 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:13:15.741 14524 14679 I DcExo   : fps: измерено 25.0 → 25.0
+11-12 23:13:50.676 14832 14832 I DcExo   : DCMARK xvid-ours2
+--------- beginning of main
+11-12 23:13:50.676 14832 14832 I DcExo   : DCMARK xvid-ours2
+--------- beginning of system
+11-12 23:13:56.267 14853 14853 I ExoPlayerImpl: Init a1e154f [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-12 23:13:56.269 14853 14853 I DcExo   : FFmpeg для старых форматов подключён
+11-12 23:14:02.385 14853 15010 I DcExo   : fps: измерено 25.0 → 25.0
