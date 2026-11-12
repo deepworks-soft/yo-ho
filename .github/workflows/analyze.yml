@@ -42,6 +42,9 @@ jobs:
           if [ -f chunks_test.mjs ]; then
             if node --no-warnings chunks_test.mjs > ch.log 2>&1; then echo "::notice title=Мост: куски::$(grep -c '✓' ch.log) проверок ✓"; else echo "::error title=Мост: куски::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' ch.log)"; exit 1; fi
           fi
+          if [ -f community_test.mjs ]; then
+            if node --no-warnings community_test.mjs > cm.log 2>&1; then echo "::notice title=Мост: канал и бот участников::$(grep -c '✓' cm.log) проверок ✓"; else echo "::error title=Мост: канал::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' cm.log)"; exit 1; fi
+          fi
           if [ -f social_test.mjs ]; then
             if node --no-warnings social_test.mjs > s.log 2>&1; then echo "::notice title=Мост: друзья::$(grep -c '✓' s.log) проверок ✓"; else echo "::error title=Мост: друзья::$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' s.log)"; exit 1; fi
           fi
