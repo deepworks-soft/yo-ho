@@ -64,6 +64,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.47.9   # как у выпущенных сборок; 3.50 ломает сборку APK (lint на Java 17)
           cache: true
 
       - name: Платформенные файлы
@@ -269,6 +270,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.47.9   # как у выпущенных сборок; 3.50 ломает сборку APK (lint на Java 17)
           cache: true
 
       - name: Платформенные файлы
