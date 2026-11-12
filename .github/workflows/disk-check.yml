@@ -34,6 +34,20 @@ jobs:
           up=$(python3 -c "import json; print(json.load(open('upl.json')).get('href',''))" 2>/dev/null || true)
           w=нет
           if [ -n "$up" ] && echo ok | curl -s -o /dev/null -w '%{http_code}' -T - "$up" | grep -qE '^20[01]$'; then w=да; fi
+          # Проба «Диск сам скачивает файл по ссылке» (обход лимита прямой загрузки, если он на это не действует).
+          U=$(python3 -c "import urllib.parse;print(urllib.parse.quote('https://raw.githubusercontent.com/${{ github.repository }}/main/README.md',safe=''))")
+          curl -s -X POST -H "$A" "https://cloud-api.yandex.net/v1/disk/resources/upload?path=disk%3A%2Fyo-ho-check%2Furl.txt&url=$U" > ext.json
+          op=$(python3 -c "import json; print(json.load(open('ext.json')).get('href',''))" 2>/dev/null || true)
+          u=нет
+          if [ -n "$op" ]; then
+            for i in $(seq 1 20); do
+              st=$(curl -s -H "$A" "$op" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))" 2>/dev/null || true)
+              [ "$st" = success ] && { u=да; break; }; [ "$st" = failed ] && break; sleep 3
+            done
+          else
+            echo "::warning title=Диск по ссылке::$(python3 -c "import json; d=json.load(open('ext.json')); print(d.get('error',''), d.get('description',''))" 2>/dev/null)"
+          fi
+          echo "::notice title=Диск по ссылке::сохранение файла по ссылке: $u"
           curl -s -o /dev/null -X DELETE -H "$A" "https://cloud-api.yandex.net/v1/disk/resources?path=disk%3A%2Fyo-ho-check&permanently=true" || true
           echo "::notice title=Диск раздачи::$info; запись: $w"
           [ "$w" = да ] || { echo "::error title=Диск::Записать на Диск не получилось — проверьте права приложения"; exit 1; }
