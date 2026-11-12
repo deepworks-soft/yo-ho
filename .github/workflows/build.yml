@@ -144,6 +144,40 @@ jobs:
           name: symbols-android-encrypted
           path: symbols-android-*.7z
           retention-days: 90
+      - name: Ключ расшифровки (Android) — зашифрованным на Диск через GitHub (если напрямую не принял)
+        if: ${{ hashFiles('symbols-android-*.7z') != '' }}
+        continue-on-error: true
+        shell: bash
+        env:
+          T: ${{ secrets.YADISK_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 0.7.6: Диск часто не даёт прямую загрузку (лимит). Зашифрованный архив (пароль — из секрета подписи)
+          # ненадолго кладётся в выпуск GitHub, Диск скачивает его по ссылке в disk:/Yo-ho-symbols, файл из выпуска удаляется.
+          f=$(ls symbols-android-*.7z | head -n1)
+          A="Authorization: OAuth $T"
+          API=https://cloud-api.yandex.net/v1/disk/resources
+          enc() { python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
+          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
+            gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease --title "Yo-ho $VERSION" \
+              --notes "Файлы Yo-ho $VERSION. Устанавливать удобнее с сайта: https://deepworks-soft.github.io" > /dev/null 2>&1 || true
+          ok=""
+          for i in 1 2 3; do gh release upload "v$VERSION" "$f" --clobber -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 && { ok=1; break; }; sleep 10; done
+          [ -z "$ok" ] && { echo "::warning title=Ключ расшифровки::в выпуск не загрузился — остаётся в артефакте"; exit 0; }
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/$f"
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho-symbols")" || true
+          done=""
+          op=$(curl -s -X POST -H "$A" "$API/upload?path=$(enc "disk:/Yo-ho-symbols/$f")&url=$(enc "$url")" | python3 -c "import json,sys;print(json.load(sys.stdin).get('href',''))" 2>/dev/null || true)
+          if [ -n "$op" ]; then
+            for k in $(seq 1 90); do
+              st=$(curl -s -H "$A" "$op" | python3 -c "import json,sys;print(json.load(sys.stdin).get('status',''))" 2>/dev/null || true)
+              [ "$st" = success ] && { done=1; break; }
+              [ "$st" = failed ] && break
+              sleep 10
+            done
+          fi
+          gh release delete-asset "v$VERSION" "$f" -y -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 || true
+          if [ -n "$done" ]; then echo "::notice title=Ключ расшифровки::disk:/Yo-ho-symbols/$f (зашифрован)"; else echo "::warning title=Ключ расшифровки::Диск не скачал — остаётся в артефакте (90 дней)"; fi
 
       - name: Переименование
         run: cp build/app/outputs/flutter-apk/app-release.apk Yo-ho-$VERSION.apk
@@ -324,6 +358,40 @@ jobs:
           name: symbols-windows-encrypted
           path: symbols-windows-*.7z
           retention-days: 90
+      - name: Ключ расшифровки (Windows) — зашифрованным на Диск через GitHub (если напрямую не принял)
+        if: ${{ hashFiles('symbols-windows-*.7z') != '' }}
+        continue-on-error: true
+        shell: bash
+        env:
+          T: ${{ secrets.YADISK_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 0.7.6: Диск часто не даёт прямую загрузку (лимит). Зашифрованный архив (пароль — из секрета подписи)
+          # ненадолго кладётся в выпуск GitHub, Диск скачивает его по ссылке в disk:/Yo-ho-symbols, файл из выпуска удаляется.
+          f=$(ls symbols-windows-*.7z | head -n1)
+          A="Authorization: OAuth $T"
+          API=https://cloud-api.yandex.net/v1/disk/resources
+          enc() { python -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
+          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
+            gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease --title "Yo-ho $VERSION" \
+              --notes "Файлы Yo-ho $VERSION. Устанавливать удобнее с сайта: https://deepworks-soft.github.io" > /dev/null 2>&1 || true
+          ok=""
+          for i in 1 2 3; do gh release upload "v$VERSION" "$f" --clobber -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 && { ok=1; break; }; sleep 10; done
+          [ -z "$ok" ] && { echo "::warning title=Ключ расшифровки::в выпуск не загрузился — остаётся в артефакте"; exit 0; }
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/$f"
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho-symbols")" || true
+          done=""
+          op=$(curl -s -X POST -H "$A" "$API/upload?path=$(enc "disk:/Yo-ho-symbols/$f")&url=$(enc "$url")" | python -c "import json,sys;print(json.load(sys.stdin).get('href',''))" 2>/dev/null || true)
+          if [ -n "$op" ]; then
+            for k in $(seq 1 90); do
+              st=$(curl -s -H "$A" "$op" | python -c "import json,sys;print(json.load(sys.stdin).get('status',''))" 2>/dev/null || true)
+              [ "$st" = success ] && { done=1; break; }
+              [ "$st" = failed ] && break
+              sleep 10
+            done
+          fi
+          gh release delete-asset "v$VERSION" "$f" -y -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 || true
+          if [ -n "$done" ]; then echo "::notice title=Ключ расшифровки::disk:/Yo-ho-symbols/$f (зашифрован)"; else echo "::warning title=Ключ расшифровки::Диск не скачал — остаётся в артефакте (90 дней)"; fi
 
       - name: Торрент-движок для Windows (TorrServer)
         shell: bash
