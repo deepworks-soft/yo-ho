@@ -1,0 +1,226 @@
+name: Сборка Yo-ho для ТВ (новая основа)
+
+# Новая ТВ-версия на родном Android (Kotlin + Compose, папка native/ в закрытом deep-cinema; план — docs/NATIVE.md).
+# Запуск вручную, только после «да» владельца. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
+# (manifest-beta.json, видит лишь владелец с «Тестовыми версиями»); выбора «всем» здесь нет.
+#
+# Что делает: берёт код из ветки (по умолчанию native), скачивает торрент-движок, собирает APK тем же ключом
+# подписи, что у Flutter-версии (секрет ANDROID_KEYSTORE_B64) — поэтому обновление встаёт поверх 0.7.7 и данные
+# остаются; проверяет подпись; подписывает файлы для обновлятора (tool/update_sign.py) и кладёт их на Яндекс Диск
+# (обход лимита — через выпуск GitHub, как в build.yml); последним — manifest-beta.json; пишет владельцу в Telegram.
+# disk=no — только файлы в артефакты сборки (проверить, что собирается; на Диск ничего не идёт).
+# Номер сборки = 5000 + номер запуска: заведомо больше, чем у Flutter-версии (1100 + запуск).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Номер версии, например 0.8.0'
+        required: true
+      notes:
+        description: 'Что нового'
+        default: 'Тестовая версия на новой основе'
+      ref:
+        description: 'Ветка кода'
+        default: native
+      disk:
+        description: 'Выкладывать на Яндекс Диск в тестовый канал (no — только файлы в артефакты)'
+        default: 'no'
+
+permissions:
+  contents: write   # выпуск GitHub — запасной путь на Диск, если прямая загрузка закрыта лимитом
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+jobs:
+  android:
+    name: Android TV (новая основа)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - name: Номер версии
+        env:
+          V: ${{ inputs.version }}
+        run: |
+          echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+          echo "BUILD=$(( 5000 + ${{ github.run_number }} ))" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Торрент-движок для Android (TorrServer)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          gh api repos/YouROK/TorrServer/releases/latest > ts.json
+          pick() { jq -r --arg re "$1" '[.assets[] | select(.name|test($re;"i"))][0].browser_download_url // empty' ts.json; }
+          A64=$(pick 'android.*arm64'); A7=$(pick 'android.*arm(v)?7')
+          echo "arm64: $A64"; echo "arm7: $A7"
+          J=native/app/src/main/jniLibs
+          mkdir -p $J/arm64-v8a $J/armeabi-v7a
+          [ -n "$A64" ] && curl -fsSL "$A64" -o $J/arm64-v8a/libtorrserver.so
+          [ -n "$A7" ] && curl -fsSL "$A7" -o $J/armeabi-v7a/libtorrserver.so
+          ls -la $J/*/ || true
+          if [ -z "$A64" ]; then echo "::warning::TorrServer для Android не скачан — сборка без встроенного движка"; fi
+          exit 0
+
+      - name: Каталог трекеров для встроенного поиска
+        run: python3 tool/build_tracker_catalog.py || true
+
+      - name: Единый ключ подписи (из секрета репозитория — в коде его нет)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "::error title=Подпись::Нет секрета ANDROID_KEYSTORE_B64"; exit 1; fi
+          mkdir -p tool/assets
+          echo "$KEYSTORE_B64" | base64 -d > tool/assets/signing.keystore
+
+      - name: Сборка APK
+        run: |
+          set -o pipefail
+          gradle -p native --no-daemon --stacktrace assembleRelease \
+            -PyohoVersion=$VERSION -PyohoBuild=$BUILD -PyohoKeystore=$PWD/tool/assets/signing.keystore 2>&1 | tee build.log
+
+      - name: Показать ошибку
+        if: failure()
+        run: |
+          # Ошибки Kotlin — строки «e: …»; иначе последние строки журнала.
+          E=$(grep -E '^e: |error:|FAILURE|What went wrong' -A3 build.log | head -60)
+          [ -z "$E" ] && E=$(tail -n 60 build.log)
+          echo "::error title=Сборка::$(printf '%s' "$E" | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')"
+
+      - name: Имена файлов и проверка подписи
+        run: |
+          set -e
+          O=native/app/build/outputs/apk/release
+          ls -la $O
+          cp $O/app-universal-release.apk Yo-ho-$VERSION.apk
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            [ -f $O/app-$abi-release.apk ] && cp $O/app-$abi-release.apk Yo-ho-$VERSION-$abi.apk
+          done
+          # Подписано тем же ключом, что Flutter-версия? Иначе ТВ не поставит обновление поверх.
+          for f in Yo-ho-$VERSION*.apk; do python3 tool/check_apk_sign.py "$f" tool/assets/signing.keystore; done
+          # Тот же пакет и номер сборки больше прежних.
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          "$BT/aapt2" dump badging Yo-ho-$VERSION.apk | head -1 | tee badging.txt
+          grep -q "name='app.deepcinema.deep_cinema'" badging.txt || { echo "::error title=Пакет::не тот applicationId"; exit 1; }
+          echo "::notice title=APK::$(ls -l Yo-ho-$VERSION*.apk | awk '{printf "%s %.1f МБ; ", $9, $5/1048576}') сборка $BUILD"
+
+      - name: Файлы для ручной установки (без Диска)
+        uses: actions/upload-artifact@v4
+        with:
+          name: files-native-${{ env.VERSION }}
+          path: Yo-ho-${{ env.VERSION }}*.apk
+          retention-days: 14
+
+      - name: Подпись обновлений, Яндекс Диск и тестовый канал
+        if: ${{ inputs.disk == 'yes' }}
+        env:
+          T: ${{ secrets.YADISK_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          PY: python3
+          NOTES: ${{ inputs.notes }}
+        run: |
+          set -e
+          pip install -q cryptography
+          KS=tool/assets/signing.keystore
+          python3 tool/update_sign.py sign-files $KS "$VERSION" part-android.json Yo-ho-$VERSION*.apk
+          printf '%s\n' "$NOTES" > notes.txt
+          python3 tool/update_sign.py merge $KS "$VERSION" notes.txt manifest.json -- part-android.json
+          grep -q "\"version\": \"$VERSION\"" manifest.json
+          want=$(grep -o 'updatePublicKey = "[^"]*"' native/app/src/main/kotlin/app/deepcinema/deep_cinema/core/Keys.kt | cut -d'"' -f2)
+          got=$(python3 -c "import json;print(json.load(open('manifest.json'))['key'])")
+          [ "$got" = "$want" ] || { echo "::error title=Подпись::ключ сборки не совпадает с ключом в программе"; exit 1; }
+          A="Authorization: OAuth $T"
+          API=https://cloud-api.yandex.net/v1/disk/resources
+          enc() { python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
+          up() { # файл → путь на Диске; лимит загрузки — через выпуск GitHub v$VERSION (как в build.yml).
+            for i in 1 2 3 4 5 6; do
+              lim="--speed-limit 1000000 --speed-time 60"; [ $i = 6 ] && lim=""
+              href=$(curl -s -H "$A" "$API/upload?path=$(enc "$2")&overwrite=true" | $PY -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+              [ -z "$href" ] && break
+              code=$(curl -s -o /dev/null -w '%{http_code}' $lim --max-time 3600 -T "$1" "$href" || true)
+              case "$code" in 200|201|202) echo "$(basename "$1"): загружен"; return 0;; esac
+              echo "$(basename "$1"): попытка $i не удалась ($code)"; sleep 5
+            done
+            echo "$(basename "$1"): напрямую Диск не принимает — через выпуск GitHub"
+            gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
+              gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease --title "Yo-ho $VERSION" \
+                --notes "Файлы Yo-ho $VERSION (тестовая, новая основа ТВ)." > /dev/null 2>&1 || true
+            for i in 1 2 3; do gh release upload "v$VERSION" "$1" --clobber -R "$GITHUB_REPOSITORY" && break; sleep 10; done
+            url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/$(basename "$1")"
+            for i in 1 2 3; do
+              curl -s -o /dev/null -X DELETE -H "$A" "$API?path=$(enc "$2")&permanently=true" || true
+              sleep 3
+              op=$(curl -s -X POST -H "$A" "$API/upload?path=$(enc "$2")&url=$(enc "$url")" | $PY -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
+              if [ -n "$op" ]; then
+                for k in $(seq 1 360); do
+                  st=$(curl -s -H "$A" "$op" | $PY -c "import json,sys;print(json.load(sys.stdin).get('status',''))" 2>/dev/null || true)
+                  [ "$st" = success ] && { echo "$(basename "$1"): Диск скачал с GitHub"; return 0; }
+                  [ "$st" = failed ] && break
+                  sleep 10
+                done
+              fi
+              echo "$(basename "$1"): Диск не скачал по ссылке (попытка $i)"; sleep 15
+            done
+            echo "::error title=Яндекс Диск::Не загрузился $(basename "$1")"; return 1
+          }
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho")" || true
+          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho/$VERSION")" || true
+          for f in Yo-ho-$VERSION*.apk; do up "$f" "disk:/Yo-ho/$VERSION/$f"; done
+          # Все файлы на месте и совпадают по размеру — только потом список версий.
+          python3 - <<'PY'
+          import json, os, subprocess, sys, urllib.parse
+          m = json.load(open('manifest.json'))
+          A = 'Authorization: OAuth ' + os.environ['T']
+          bad = 0
+          for f in m['files']:
+              p = urllib.parse.quote(f"disk:/Yo-ho/{m['version']}/{f['name']}", safe='')
+              r = subprocess.run(['curl', '-s', '-H', A, f'https://cloud-api.yandex.net/v1/disk/resources?path={p}&fields=size'], capture_output=True, text=True).stdout
+              if json.loads(r or '{}').get('size') != f['size']:
+                  bad += 1
+                  print(f"::error title=Яндекс Диск::{f['name']}: не тот размер")
+          sys.exit(1 if bad else 0)
+          PY
+          # Только тестовый канал. manifest.json (у всех) не трогаем.
+          cp manifest.json manifest-beta.json
+          up manifest-beta.json "disk:/Yo-ho/manifest-beta.json"
+          echo "::notice title=Выпуск::Yo-ho $VERSION (новая основа) — в тестовом канале, только у владельца"
+
+      - name: Владельцу в Telegram — тестовая версия готова
+        if: ${{ inputs.disk == 'yes' }}
+        continue-on-error: true
+        env:
+          TG: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          [ -z "$TG" ] || [ -z "$CHAT" ] && exit 0
+          python3 - <<'PY' > tg.json
+          import json, os
+          v = os.environ.get('VERSION', '')
+          text = f"🧪 Тестовая Yo-ho {v} для ТВ на новой основе готова — придёт обновлением на ваш телевизор (если включены «Тестовые версии»).\n{os.environ.get('NOTES', '')}".strip()
+          print(json.dumps({"chat_id": os.environ['CHAT'], "text": text}, ensure_ascii=False))
+          PY
+          curl -s -o /dev/null -H 'content-type: application/json' --data @tg.json "https://api.telegram.org/bot$TG/sendMessage" || true
+
+      - name: Убрать ключ подписи
+        if: always()
+        run: rm -f tool/assets/signing.keystore ks

@@ -1,0 +1,94 @@
+name: Стенд новой основы ТВ (эмулятор)
+# Запуск вручную. Проверка обновления Flutter-версия → новая основа (native/, docs/NATIVE.md) на эмуляторе:
+# собирает демо-сборку Flutter-версии и новую основу из одной ветки, подписывает обе ВРЕМЕННЫМ ключом стенда
+# (не для установки на ТВ), ставит сначала старую (создаёт детский профиль с кодом), потом поверх — новую, и
+# нажимает кнопки пульта по сценарию tool/tv_scenario_native.txt. Снимки — в ветку tv-shots-native. Релиз не создаёт.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ветка'
+        default: native
+permissions:
+  contents: write
+concurrency:
+  group: tv-check-native
+  cancel-in-progress: true
+jobs:
+  tv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+          cache: true
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Временный ключ стенда
+        run: |
+          mkdir -p tool/assets
+          keytool -genkeypair -keystore /tmp/stand.keystore -storepass android -keypass android -alias androiddebugkey -dname "CN=test" -keyalg RSA -validity 1000
+          cp /tmp/stand.keystore tool/assets/signing.keystore
+      - name: Старая версия (Flutter, демо-сборка стенда)
+        run: |
+          set -o pipefail
+          { flutter create . --project-name deep_cinema --org app.deepcinema --platforms=android && python3 tool/patch_platforms.py android; } > build.log 2>&1
+          flutter pub get >> build.log 2>&1
+          flutter build apk --release --target-platform android-x64 --dart-define=APP_VERSION=0.7.7 --dart-define=DC_FOCUS_LOG=true --dart-define=DC_DEMO=true >> build.log 2>&1 || { echo "::error title=APK Flutter::$(tail -n 40 build.log | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')"; exit 1; }
+      - name: Новая основа
+        run: |
+          set -o pipefail
+          gradle -p native --no-daemon assembleRelease -PyohoVersion=9.9.9 -PyohoBuild=9999 -PyohoKeystore=/tmp/stand.keystore 2>&1 | tee native.log || {
+            E=$(grep -E '^e: |error:|What went wrong' -A3 native.log | head -60); [ -z "$E" ] && E=$(tail -n 60 native.log)
+            echo "::error title=Новая основа::$(printf '%s' "$E" | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')"; exit 1; }
+          cp native/app/build/outputs/apk/release/app-x86_64-release.apk /tmp/native.apk
+          ls -la /tmp/native.apk
+      - name: KVM
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/local/lib/android/sdk/ndk || true
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Эмулятор и пульт
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          target: default
+          disable-animations: true
+          cores: 2
+          ram-size: 2048M
+          emulator-boot-timeout: 1200
+          emulator-options: -skin 1280x720 -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -accel on
+          script: bash tool/tv_check.sh build/app/outputs/flutter-apk/app-release.apk tool/tv_scenario_native.txt
+      - name: Ошибки программы
+        if: always()
+        run: |
+          grep -iE "FATAL|AndroidRuntime" shots/native.log | head -15 | while read -r l; do echo "::warning title=native::$(echo "$l" | cut -c1-300)"; done || true
+          cat shots/install.log || true
+      - name: В ветку tv-shots-native
+        if: always()
+        run: |
+          mkdir -p shots && cd shots
+          [ -n "$(ls -A)" ] || { echo "::error title=Стенд::снимков нет — эмулятор не запустился"; echo "пусто" > EMPTY.txt; }
+          which convert > /dev/null || sudo apt-get install -y imagemagick > /dev/null 2>&1 || true
+          for f in *.png; do [ -f "$f" ] && convert "$f" -resize 960x -quality 80 "${f%.png}.jpg" && rm "$f"; done || true
+          git init -q
+          git config user.name "deep-cinema-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git checkout -q -b tv-shots-native
+          git add -A
+          git commit -qm "Новая основа: ${{ inputs.ref }} $(date -u +%F\ %T)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" tv-shots-native
