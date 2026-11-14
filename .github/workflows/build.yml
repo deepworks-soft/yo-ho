@@ -77,7 +77,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set +e
-          gh api repos/YouROK/TorrServer/releases/latest > ts.json
+          # Версия движка закреплена: с 14.11 «latest» — новая ветка Silo.x, она у нас не запускается.
+          gh api repos/YouROK/TorrServer/releases/tags/MatriX.150 > ts.json
           pick() { jq -r --arg re "$1" '[.assets[] | select(.name|test($re;"i"))][0].browser_download_url // empty' ts.json; }
           A64=$(pick 'android.*arm64'); A7=$(pick 'android.*arm(v)?7')
           echo "arm64: $A64"; echo "arm7: $A7"
@@ -399,7 +400,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set +e
-          gh api repos/YouROK/TorrServer/releases/latest > ts.json
+          # Версия движка закреплена: с 14.11 «latest» — новая ветка Silo.x, она у нас не запускается.
+          gh api repos/YouROK/TorrServer/releases/tags/MatriX.150 > ts.json
           URL=$(jq -r '[.assets[] | select(.name|test("windows.*(amd64|x64).*\\.exe$";"i"))][0].browser_download_url // empty' ts.json)
           echo "windows: $URL"
           [ -n "$URL" ] && curl -fsSL "$URL" -o torrserver.exe

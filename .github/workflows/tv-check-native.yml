@@ -53,7 +53,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Для самопроверки просмотра (сценарий, раздел 7): движок запускается программой на эмуляторе.
-          A64=$(curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/YouROK/TorrServer/releases/latest | jq -r '[.assets[] | select(.name|test("android.*amd64";"i"))][0].browser_download_url // empty')
+          A64=$(curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/YouROK/TorrServer/releases/tags/MatriX.150 | jq -r '[.assets[] | select(.name|test("android.*amd64";"i"))][0].browser_download_url // empty')
           if [ -n "$A64" ]; then mkdir -p native/app/src/main/jniLibs/x86_64 && curl -fsSL "$A64" -o native/app/src/main/jniLibs/x86_64/libtorrserver.so && echo "::notice title=Движок::$(basename "$A64")"; else echo "::warning title=Движок::нет сборки под x86_64"; fi
       - name: Новая основа
         run: |
