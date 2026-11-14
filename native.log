@@ -1,0 +1,22 @@
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of main
+--------- beginning of system
+--------- beginning of system
+--------- beginning of main
+11-14 11:11:53.428  4484  4484 I ExoPlayerImpl: Init 96f4866 [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-14 11:11:58.656  4484  4628 E MediaCodec: Codec reported err 0x80001019, actionCode 0, while in state 6
+--------- beginning of main
+--------- beginning of system
+11-14 11:12:50.566  4666  4666 I ExoPlayerImpl: Init 9aefc47 [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29]
+11-14 11:14:54.492  4666  4666 I ExoPlayerImpl: Release 9aefc47 [AndroidXMedia3/1.9.0] [generic_x86_64, Android SDK built for x86_64, unknown, 29] [media3.common, media3.exoplayer, media3.decoder, media3.ui, media3.datasource, media3.extractor, media3.decoder.ffmpeg]
