@@ -1,0 +1,215 @@
+--------- beginning of main
+--------- beginning of system
+== запуск: экран kids
+--------- beginning of main
+--------- beginning of system
+11-15 07:06:56.587  3467  3467 I flutter : [IMPORTANT:flutter/shell/common/shell.cc(528)] [Action Required]: Impeller opt-out deprecated.
+11-15 07:06:56.587  3467  3467 I flutter :     The application opted out of Impeller by either using the
+11-15 07:06:56.587  3467  3467 I flutter :     `--no-enable-impeller` flag or the
+11-15 07:06:56.587  3467  3467 I flutter :     `io.flutter.embedding.android.EnableImpeller` `AndroidManifest.xml` entry.
+11-15 07:06:56.587  3467  3467 I flutter :     These options are going to go away in an upcoming Flutter release. Remove
+11-15 07:06:56.587  3467  3467 I flutter :     the explicit opt-out. If you need to opt-out, please report a bug describing
+11-15 07:06:56.587  3467  3467 I flutter :     the issue.
+11-15 07:06:56.587  3467  3467 I flutter : 
+11-15 07:06:56.587  3467  3467 I flutter :     https://github.com/flutter/flutter/issues/new?template=02_bug.yml
+11-15 07:06:56.587  3467  3467 I flutter : 
+11-15 07:06:56.668  3467  3467 I flutter : DCCHECK enum=series,yandex json=series
+11-15 07:06:57.718  3467  3467 I flutter : DCFPS n=1 late=1 b=0.0/0.0/0.0 r=85.5/85.5/85.5 sumB=0.0 sumR=85.5 img=2/2.1MB live=0
+11-15 07:06:57.729  3467  3467 I flutter : images via: direct
+11-15 07:06:57.743  3467  3467 I flutter : dpi: не нужен: мост открывается напрямую
+11-15 07:06:57.750  3467  3467 I flutter : exo: окно готово=true
+11-15 07:06:57.993  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:58.064  3467  3467 I flutter : bridge: большие ответы проходят
+11-15 07:06:58.123  3467  3467 I flutter : img запасной TMDB: ответ 404
+11-15 07:06:58.182  3467  3467 I flutter : img мост: ответ 401 {"error":"Ð²Ð¾Ð¹Ð´Ð¸ÑÐµ Ð² Yo-ho","auth":true}
+11-15 07:06:58.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:06:59.507  3467  3467 I flutter : DCSCROLL revealTop pageTop=538 pixels=0 vh=900
+11-15 07:06:59.507  3467  3467 I flutter : DCSCROLL fullyVisible -> no scroll
+11-15 07:06:59.543  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.653  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.659  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.675  3467  3467 I flutter : DCFPS n=3 late=2 b=2.9/5.8/5.8 r=177.8/2333.4/2333.4 sumB=9.1 sumR=2520.6 img=2/2.1MB live=16
+11-15 07:06:59.683  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.684  3467  3467 I flutter : img запасной TMDB: ответ 404
+11-15 07:06:59.686  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.690  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.736  3467  3467 I flutter : img запасной TMDB: ответ 404
+11-15 07:06:59.788  3467  3467 I flutter : img запасной TMDB: ответ 404
+11-15 07:07:00.764  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:01.669  3467  3467 I flutter : DCFPS n=4 late=4 b=22.6/118.7/118.7 r=140.9/1036.6/1036.6 sumB=148.8 sumR=1353.8 img=2/2.1MB live=0
+11-15 07:07:02.675  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:03.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:04.669  3467  3467 I flutter : DCFPS n=1 late=1 b=0.4/0.4/0.4 r=28.3/28.3/28.3 sumB=0.4 sumR=28.3 img=2/2.1MB live=0
+11-15 07:07:05.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:06.669  3467  3467 I flutter : DCFPS n=1 late=1 b=0.3/0.3/0.3 r=35.0/35.0/35.0 sumB=0.3 sumR=35.0 img=2/2.1MB live=0
+11-15 07:07:07.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:08.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:09.340  3467  3467 I flutter : DCSCROLL ensureVisible pixels=null max=null vh=null
+11-15 07:07:09.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:10.669  3467  3467 I flutter : DCFPS n=2 late=2 b=2.2/2.2/2.2 r=39.7/39.7/39.7 sumB=2.7 sumR=75.8 img=2/2.1MB live=0
+11-15 07:07:11.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:12.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:13.669  3467  3467 I flutter : DCFPS n=1 late=1 b=1.2/1.2/1.2 r=31.9/31.9/31.9 sumB=1.2 sumR=31.9 img=2/2.1MB live=0
+11-15 07:07:14.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:15.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:17.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:18.669  3467  3467 I flutter : DCFPS n=1 late=1 b=0.4/0.4/0.4 r=33.1/33.1/33.1 sumB=0.4 sumR=33.1 img=2/2.1MB live=0
+11-15 07:07:19.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:23.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:24.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:25.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:26.389  3652  3652 I flutter : DCSHOT old-kids-profile
+11-15 07:07:26.670  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+--------- beginning of main
+--------- beginning of system
+11-15 07:06:56.587  3467  3467 I flutter : [IMPORTANT:flutter/shell/common/shell.cc(528)] [Action Required]: Impeller opt-out deprecated.
+11-15 07:06:56.587  3467  3467 I flutter :     The application opted out of Impeller by either using the
+11-15 07:06:56.587  3467  3467 I flutter :     `--no-enable-impeller` flag or the
+11-15 07:06:56.587  3467  3467 I flutter :     `io.flutter.embedding.android.EnableImpeller` `AndroidManifest.xml` entry.
+11-15 07:06:56.587  3467  3467 I flutter :     These options are going to go away in an upcoming Flutter release. Remove
+11-15 07:06:56.587  3467  3467 I flutter :     the explicit opt-out. If you need to opt-out, please report a bug describing
+11-15 07:06:56.587  3467  3467 I flutter :     the issue.
+11-15 07:06:56.587  3467  3467 I flutter : 
+11-15 07:06:56.587  3467  3467 I flutter :     https://github.com/flutter/flutter/issues/new?template=02_bug.yml
+11-15 07:06:56.587  3467  3467 I flutter : 
+11-15 07:06:56.668  3467  3467 I flutter : DCCHECK enum=series,yandex json=series
+11-15 07:06:57.718  3467  3467 I flutter : DCFPS n=1 late=1 b=0.0/0.0/0.0 r=85.5/85.5/85.5 sumB=0.0 sumR=85.5 img=2/2.1MB live=0
+11-15 07:06:57.729  3467  3467 I flutter : images via: direct
+11-15 07:06:57.743  3467  3467 I flutter : dpi: не нужен: мост открывается напрямую
+11-15 07:06:57.750  3467  3467 I flutter : exo: окно готово=true
+11-15 07:06:57.993  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:58.064  3467  3467 I flutter : bridge: большие ответы проходят
+11-15 07:06:58.123  3467  3467 I flutter : img запасной TMDB: ответ 404
+11-15 07:06:58.182  3467  3467 I flutter : img мост: ответ 401 {"error":"Ð²Ð¾Ð¹Ð´Ð¸ÑÐµ Ð² Yo-ho","auth":true}
+11-15 07:06:58.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:06:59.507  3467  3467 I flutter : DCSCROLL revealTop pageTop=538 pixels=0 vh=900
+11-15 07:06:59.507  3467  3467 I flutter : DCSCROLL fullyVisible -> no scroll
+11-15 07:06:59.543  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.653  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.659  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.675  3467  3467 I flutter : DCFPS n=3 late=2 b=2.9/5.8/5.8 r=177.8/2333.4/2333.4 sumB=9.1 sumR=2520.6 img=2/2.1MB live=16
+11-15 07:06:59.683  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.684  3467  3467 I flutter : img запасной TMDB: ответ 404
+11-15 07:06:59.686  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.690  3467  3467 I flutter : img напрямую: ответ 404
+11-15 07:06:59.736  3467  3467 I flutter : img запасной TMDB: ответ 404
+11-15 07:06:59.788  3467  3467 I flutter : img запасной TMDB: ответ 404
+11-15 07:07:00.764  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:01.669  3467  3467 I flutter : DCFPS n=4 late=4 b=22.6/118.7/118.7 r=140.9/1036.6/1036.6 sumB=148.8 sumR=1353.8 img=2/2.1MB live=0
+11-15 07:07:02.675  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:03.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:04.669  3467  3467 I flutter : DCFPS n=1 late=1 b=0.4/0.4/0.4 r=28.3/28.3/28.3 sumB=0.4 sumR=28.3 img=2/2.1MB live=0
+11-15 07:07:05.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:06.669  3467  3467 I flutter : DCFPS n=1 late=1 b=0.3/0.3/0.3 r=35.0/35.0/35.0 sumB=0.3 sumR=35.0 img=2/2.1MB live=0
+11-15 07:07:07.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:08.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:09.340  3467  3467 I flutter : DCSCROLL ensureVisible pixels=null max=null vh=null
+11-15 07:07:09.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:10.669  3467  3467 I flutter : DCFPS n=2 late=2 b=2.2/2.2/2.2 r=39.7/39.7/39.7 sumB=2.7 sumR=75.8 img=2/2.1MB live=0
+11-15 07:07:11.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:12.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:13.669  3467  3467 I flutter : DCFPS n=1 late=1 b=1.2/1.2/1.2 r=31.9/31.9/31.9 sumB=1.2 sumR=31.9 img=2/2.1MB live=0
+11-15 07:07:14.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:15.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:17.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:18.669  3467  3467 I flutter : DCFPS n=1 late=1 b=0.4/0.4/0.4 r=33.1/33.1/33.1 sumB=0.4 sumR=33.1 img=2/2.1MB live=0
+11-15 07:07:19.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:23.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:24.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:25.669  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+11-15 07:07:26.389  3652  3652 I flutter : DCSHOT old-kids-profile
+11-15 07:07:26.670  3467  3467 I flutter : DCFPS n=0 img=2/2.1MB live=0
+--------- beginning of main
+--------- beginning of system
+11-15 07:07:40.019  3784  3784 I flutter : DCSHOT new-who-is-watching
+11-15 07:07:42.054  3803  3803 I flutter : DCSHOT who-left
+11-15 07:07:46.091  3821  3821 I flutter : DCSHOT pin
+11-15 07:07:56.754  3877  3877 I flutter : DCSHOT home-adult
+11-15 07:08:00.855  3895  3895 I flutter : DCSHOT menu
+11-15 07:08:03.669  3925  3925 I flutter : DCSHOT menu-down2
+11-15 07:08:06.700  3943  3943 I flutter : DCSHOT menu-closed
+11-15 07:08:09.674  3962  3962 I flutter : DCSHOT menu-by-left
+11-15 07:08:13.654  3980  3980 I flutter : DCSHOT exit-ask
+11-15 07:08:17.658  3998  3998 I flutter : DCSHOT exit-stay
+11-15 07:08:29.476  4100  4100 I flutter : DCSHOT menu-settings
+11-15 07:08:29.756  3702  3702 I flutter : DCPERF кадры меню: всего 34, рывков 3 (8.8%), худший 276 мс
+11-15 07:08:33.489  4118  4118 I flutter : DCSHOT settings
+11-15 07:08:36.569  4136  4136 I flutter : DCSHOT settings-toggled
+--------- beginning of main
+11-15 07:08:36.569  4136  4136 I flutter : DCSHOT settings-toggled
+--------- beginning of system
+11-15 07:08:47.266  4250  4250 I flutter : DCSHOT restart-who
+== запуск: экран selftest-search|rutor|Matrix
+--------- beginning of main
+11-15 07:08:47.266  4250  4250 I flutter : DCSHOT restart-who
+--------- beginning of system
+11-15 07:08:49.667  4275  4306 I flutter : DCTEST   The Doors - Live at the Matrix 1967 (2008) FLAC · 694 МБ · 0 сид. ·  · 
+11-15 07:08:49.667  4275  4306 I flutter : DCTEST   Bad Matrix - Dangerous Game (2026) MP3 · 83 МБ · 0 сид. ·  · 
+11-15 07:08:49.668  4275  4306 I flutter : DCTEST   Матрица. Квадрология / The Matrix. Quadrology / 1999-2021 / UHD BDRemux 2160p | 4K | HDR | Dolby Vision Profile 8 | D · 266 ГБ · 14 сид. · 4K · Дубляж
+11-15 07:08:49.668  4275  4306 I flutter : DCTEST   Матрица: Воскрешение / The Matrix Resurrections (2021) WEB-DL 1080p | D | Локализованная версия · 8.3 ГБ · 4 сид. · 1080p · Дубляж
+11-15 07:08:49.668  4275  4306 I flutter : DCTEST   VA - Orbital Synth Matrix (2026) MP3 · 2.0 ГБ · 2 сид. ·  · 
+11-15 07:08:49.668  4275  4306 I flutter : DCTEST   magnet первой: magnet:?xt=urn:btih:27dfbb4d9b7442cee9367cf9a60e92036f666331&dn=The%20Doors%20-%
+11-15 07:08:49.668  4275  4306 I flutter : DCTEST search rutor «Matrix»: 100 раздач
+11-15 07:09:32.687  4360  4360 I flutter : DCSHOT selftest-search
+== запуск: экран selftest-search|1337x|Big+Buck+Bunny
+--------- beginning of main
+11-15 07:09:32.687  4360  4360 I flutter : DCSHOT selftest-search
+--------- beginning of system
+11-15 07:09:33.833  4388  4421 I flutter : DCTEST search 1337x: ошибка n0: сайт показал проверку «вы не робот» — встроенный поиск её не проходит
+== запуск: экран selftest-watch|rutor
+--------- beginning of system
+--------- beginning of main
+11-15 07:10:18.547  4496  4526 I flutter : DCTEST watch: Ищу раздачи… (0 с)
+11-15 07:10:24.558  4496  4526 I flutter : DCTEST watch: Подключаюсь к лучшим раздачам… (6 с)
+11-15 07:10:27.692  4496  4538 I flutter : DCTEST watch: Запускаю: 1080p · Дубляж · 43 ГБ (9 с)
+11-15 07:10:27.693  4496  4538 I flutter : DCTEST watch: раздача 1080p · Дубляж · 43 ГБ за 9 с
+11-15 07:10:27.694  4496  4538 I flutter : DCTEST watch: трекеры {RuTor=64 разд.}
+11-15 07:10:27.789  4496  4496 I flutter : DCTEST play: состояние 2, позиция 0 мс
+11-15 07:10:27.790  4496  4496 I flutter : DCTEST play: открываю 1080p · Дубляж · 43 ГБ
+11-15 07:10:33.305  4496  4496 I flutter : DCTEST play: ошибка плеера ERROR_CODE_DECODING_FAILED (g: Decoder failed: OMX.google.hevc.decoder)
+11-15 07:10:33.306  4496  4496 I flutter : DCTEST play: состояние 1, позиция 0 мс
+11-15 07:10:33.422  4496  4496 I flutter : DCTEST play: 0 с из 8179 с, играет=false
+11-15 07:10:38.439  4496  4496 I flutter : DCTEST play: 0 с из 8179 с, играет=false
+11-15 07:10:58.508  4496  4496 I flutter : DCTEST play: 0 с из 8179 с, играет=false
+11-15 07:11:03.524  4496  4496 I flutter : DCTEST play: 0 с из 8179 с, играет=false
+11-15 07:11:08.540  4496  4496 I flutter : DCTEST play: 0 с из 8179 с, играет=false
+11-15 07:11:13.556  4496  4496 I flutter : DCTEST play: 0 с из 8179 с, играет=false
+11-15 07:11:23.586  4496  4496 I flutter : DCTEST play: 0 с из 8179 с, играет=false
+11-15 07:11:28.600  4496  4496 I flutter : DCTEST play: 0 с из 8179 с, играет=false
+11-15 07:11:33.268  4665  4665 I flutter : DCSHOT selftest-watch
+== запуск: экран selftest-play|magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big+Buck+Bunny&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fexplodie.org%3A6969
+--------- beginning of main
+11-15 07:11:33.268  4665  4665 I flutter : DCSHOT selftest-watch
+--------- beginning of system
+11-15 07:11:39.811  4692  4692 I flutter : DCTEST play: 0 с из 0 с, играет=false
+11-15 07:11:40.005  4692  4692 I flutter : DCTEST play: движок только это устройство, файл Big Buck Bunny.mp4 (263 МБ)
+11-15 07:11:40.011  4692  4692 I flutter : DCTEST play: состояние 2, позиция 0 мс
+11-15 07:11:40.013  4692  4692 I flutter : DCTEST play: открываю Big Buck Bunny.mp4
+11-15 07:11:41.076  4692  4692 I flutter : DCTEST play: состояние 3, позиция 0 мс
+11-15 07:11:44.904  4692  4692 I flutter : DCTEST play: 3 с из 634 с, играет=true
+11-15 07:11:50.008  4692  4692 I flutter : DCTEST play: 8 с из 634 с, играет=true
+11-15 07:11:55.046  4692  4692 I flutter : DCTEST play: 13 с из 634 с, играет=true
+11-15 07:12:00.164  4692  4692 I flutter : DCTEST play: 18 с из 634 с, играет=true
+11-15 07:12:05.206  4692  4692 I flutter : DCTEST play: 23 с из 634 с, играет=true
+11-15 07:12:10.270  4692  4692 I flutter : DCTEST play: 28 с из 634 с, играет=true
+11-15 07:12:15.299  4692  4692 I flutter : DCTEST play: 33 с из 634 с, играет=true
+11-15 07:12:20.324  4692  4692 I flutter : DCTEST play: 38 с из 634 с, играет=true
+11-15 07:12:25.382  4692  4692 I flutter : DCTEST play: 43 с из 634 с, играет=true
+11-15 07:12:30.449  4692  4692 I flutter : DCTEST play: 48 с из 634 с, играет=true
+11-15 07:12:33.746  6406  6406 I flutter : DCSHOT selftest-play
+11-15 07:12:35.619  4692  4692 I flutter : DCTEST play: 54 с из 634 с, играет=true
+11-15 07:12:40.669  4692  4692 I flutter : DCTEST play: 59 с из 634 с, играет=true
+11-15 07:12:45.719  4692  4692 I flutter : DCTEST play: 64 с из 634 с, играет=true
+11-15 07:12:48.554  6875  6875 I flutter : DCSHOT selftest-play-controls
+11-15 07:12:50.753  4692  4692 I flutter : DCTEST play: 69 с из 634 с, играет=true
+11-15 07:12:55.835  4692  4692 I flutter : DCTEST play: 74 с из 634 с, играет=true
+11-15 07:13:00.912  4692  4692 I flutter : DCTEST play: 79 с из 634 с, играет=true
+11-15 07:13:05.956  4692  4692 I flutter : DCTEST play: 84 с из 634 с, играет=true
+11-15 07:13:11.002  4692  4692 I flutter : DCTEST play: 89 с из 634 с, играет=true
+11-15 07:13:16.043  4692  4692 I flutter : DCTEST play: 94 с из 634 с, играет=true
+11-15 07:13:21.090  4692  4692 I flutter : DCTEST play: 99 с из 634 с, играет=true
+11-15 07:13:24.747  7965  7965 I flutter : DCSHOT selftest-play-later
+11-15 07:13:26.131  4692  4692 I flutter : DCTEST play: 104 с из 634 с, играет=true
+11-15 07:13:31.177  4692  4692 I flutter : DCTEST play: 109 с из 634 с, играет=true
+11-15 07:13:35.252  4692  4692 I flutter : DCPERF кадры плеер: всего 428, рывков 7 (1.6%), худший 799 мс
+11-15 07:13:40.382  8324  8324 I flutter : DCSHOT selftest-play-back
