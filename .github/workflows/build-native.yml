@@ -122,6 +122,8 @@ jobs:
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
           "$BT/aapt2" dump badging Yo-ho-$VERSION.apk | head -1 | tee badging.txt
           grep -q "name='app.deepcinema.deep_cinema'" badging.txt || { echo "::error title=Пакет::не тот applicationId"; exit 1; }
+          # Профиль прогрева (native/app/src/main/baseline-prof.txt) попал в APK — ТВ скомпилирует экраны заранее.
+          if unzip -l Yo-ho-$VERSION.apk | grep -q 'assets/dexopt/baseline.prof'; then echo "::notice title=Профиль прогрева::assets/dexopt/baseline.prof есть"; else echo "::warning title=Профиль прогрева::нет assets/dexopt/baseline.prof в APK"; fi
           echo "::notice title=APK::$(ls -l Yo-ho-$VERSION*.apk | awk '{printf "%s %.1f МБ; ", $9, $5/1048576}') сборка $BUILD"
 
       - name: Файлы для ручной установки (без Диска)

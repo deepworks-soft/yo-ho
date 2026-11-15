@@ -62,6 +62,7 @@ jobs:
             E=$(grep -E '^e: |error:|What went wrong' -A3 native.log | head -60); [ -z "$E" ] && E=$(tail -n 60 native.log)
             echo "::error title=Новая основа::$(printf '%s' "$E" | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')"; exit 1; }
           cp native/app/build/outputs/apk/release/app-x86_64-release.apk /tmp/native.apk
+          if unzip -l /tmp/native.apk | grep -q 'assets/dexopt/baseline.prof'; then echo "::notice title=Профиль прогрева::assets/dexopt/baseline.prof есть"; else echo "::warning title=Профиль прогрева::нет assets/dexopt/baseline.prof в APK"; fi
           ls -la /tmp/native.apk
       - name: KVM
         run: |
@@ -84,6 +85,7 @@ jobs:
         if: always()
         run: |
           grep -E "DCTEST" shots/flutter.log | head -40 | while read -r l; do echo "::notice title=самопроверка::$(echo "$l" | cut -c1-300)"; done || true
+          grep -E "DCPERF" shots/flutter.log | head -20 | while read -r l; do echo "::notice title=плавность::$(echo "$l" | cut -c1-300)"; done || true
           grep -iE "FATAL|AndroidRuntime" shots/native.log | head -15 | while read -r l; do echo "::warning title=native::$(echo "$l" | cut -c1-300)"; done || true
           cat shots/install.log || true
       - name: В ветку tv-shots-native
