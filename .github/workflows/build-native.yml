@@ -144,7 +144,10 @@ jobs:
           set -e
           pip install -q cryptography
           KS=tool/assets/signing.keystore
-          python3 tool/update_sign.py sign-files $KS "$VERSION" part-android.json Yo-ho-$VERSION*.apk
+          # Для тестового канала публикуем только универсальный APK:
+          # Яндекс Диск систематически не импортирует один из ABI-файлов с GitHub,
+          # а любой Android TV может установить universal. Все ABI остаются в artifacts.
+          python3 tool/update_sign.py sign-files $KS "$VERSION" part-android.json Yo-ho-$VERSION.apk
           printf '%s\n' "$NOTES" > notes.txt
           python3 tool/update_sign.py merge $KS "$VERSION" notes.txt manifest.json -- part-android.json
           grep -q "\"version\": \"$VERSION\"" manifest.json
@@ -187,7 +190,7 @@ jobs:
           }
           curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho")" || true
           curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho/$VERSION")" || true
-          for f in Yo-ho-$VERSION*.apk; do up "$f" "disk:/Yo-ho/$VERSION/$f"; done
+          up "Yo-ho-$VERSION.apk" "disk:/Yo-ho/$VERSION/Yo-ho-$VERSION.apk"
           # Все файлы на месте и совпадают по размеру — только потом список версий.
           python3 - <<'PY'
           import json, os, subprocess, sys, urllib.parse
