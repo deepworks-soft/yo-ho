@@ -145,21 +145,21 @@ jobs:
           KS=tool/assets/signing.keystore
           # Все ABI доступны в artifacts; в beta-release размещаем универсальный APK.
           python3 tool/update_sign.py sign-files "$KS" "$VERSION" part-android.json "Yo-ho-$VERSION.apk"
-          printf '%s\\n' "$NOTES" > notes.txt
+          printf '%s\n' "$NOTES" > notes.txt
           python3 tool/update_sign.py merge "$KS" "$VERSION" notes.txt manifest-beta.json -- part-android.json
-          grep -q "\\\"version\\\": \\\"$VERSION\\\"" manifest-beta.json
+          grep -q "\\"version\\": \\"$VERSION\\"" manifest-beta.json
           want=$(grep -o 'updatePublicKey = "[^"]*"' native/app/src/main/kotlin/app/deepcinema/deep_cinema/core/Keys.kt | cut -d'"' -f2)
           got=$(python3 -c "import json;print(json.load(open('manifest-beta.json'))['key'])")
           [ "$got" = "$want" ] || { echo "::error title=Подпись::ключ обновления отличается от программы"; exit 1; }
-          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \\
-            gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease \\
+          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease \
               --title "Yo-ho $VERSION (тестовая)" --notes "$NOTES"
           # Сначала файл, затем подписанный манифест: неполную beta обновлятор не предлагает.
           gh release upload "v$VERSION" "Yo-ho-$VERSION.apk" --clobber -R "$GITHUB_REPOSITORY"
           gh release upload "v$VERSION" manifest-beta.json --clobber -R "$GITHUB_REPOSITORY"
-          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \\
+          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \
             --jq '.assets[].name' | grep -Fx "Yo-ho-$VERSION.apk"
-          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \\
+          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \
             --jq '.assets[].name' | grep -Fx "manifest-beta.json"
           echo "::notice title=Тестовая версия::$VERSION: прямое скачивание GitHub, Яндекс Диск не используется"
 
