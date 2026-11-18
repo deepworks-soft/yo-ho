@@ -49,13 +49,30 @@ jobs:
             echo "Test build $VERSION already requested"
             exit 0
           fi
-          # Только закрытая рабочая ветка native и ТОЛЬКО тестовый manifest-beta.json.
+          # Два барьера против повторов: выпущенная версия и недавний/именной run.
+          # Пометка GitHub tags иногда отвечает 403 для actions[bot].
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Beta $VERSION already has a GitHub prerelease"
+            exit 0
+          fi
+          if gh run list --workflow build-native.yml --limit 30 --json displayTitle,createdAt,event,status |
+            jq -e --arg v "$VERSION" '
+              any(.[]; .event == "workflow_dispatch" and (
+                (.displayTitle | contains($v)) or
+                ((now - (.createdAt | fromdateiso8601) < 1200) and .status != "completed")
+              ))
+            ' >/dev/null; then
+            echo "Native build already queued or running"
+            exit 0
+          fi
+          # Запрашиваем сборку ровно один раз. Для новой версии будет run-name с номером.
           gh workflow run build-native.yml --ref main \
             -f "version=$VERSION" \
             -f 'ref=native' \
             -f 'disk=yes' \
             -f "notes=$NOTES"
+          # Метка — дополнительная защита, но GitHub иногда запрещает её создавать.
           gh api -X POST "repos/$GH_REPO/git/refs" \
             -f "ref=refs/tags/native-test-request-$VERSION" \
-            -f "sha=$GITHUB_SHA" >/dev/null
+            -f "sha=$GITHUB_SHA" >/dev/null 2>&1 || echo "::warning::GitHub denied request tag, run-name prevents duplicates"
           echo "Test build $VERSION dispatched once"
