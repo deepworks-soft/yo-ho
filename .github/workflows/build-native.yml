@@ -134,82 +134,34 @@ jobs:
           path: Yo-ho-${{ env.VERSION }}*.apk
           retention-days: 14
 
-      - name: Подпись обновлений, Яндекс Диск и тестовый канал
+      - name: Подписать и опубликовать native beta непосредственно в открытом GitHub
         if: ${{ inputs.disk == 'yes' }}
         env:
-          T: ${{ secrets.YADISK_TOKEN }}
           GH_TOKEN: ${{ github.token }}
-          PY: python3
           NOTES: ${{ inputs.notes }}
         run: |
-          set -e
+          set -euo pipefail
           pip install -q cryptography
           KS=tool/assets/signing.keystore
-          # Для тестового канала публикуем только универсальный APK:
-          # Яндекс Диск систематически не импортирует один из ABI-файлов с GitHub,
-          # а любой Android TV может установить universal. Все ABI остаются в artifacts.
-          python3 tool/update_sign.py sign-files $KS "$VERSION" part-android.json Yo-ho-$VERSION.apk
-          printf '%s\n' "$NOTES" > notes.txt
-          python3 tool/update_sign.py merge $KS "$VERSION" notes.txt manifest.json -- part-android.json
-          grep -q "\"version\": \"$VERSION\"" manifest.json
+          # Все ABI доступны в artifacts; в beta-release размещаем универсальный APK.
+          python3 tool/update_sign.py sign-files "$KS" "$VERSION" part-android.json "Yo-ho-$VERSION.apk"
+          printf '%s\\n' "$NOTES" > notes.txt
+          python3 tool/update_sign.py merge "$KS" "$VERSION" notes.txt manifest-beta.json -- part-android.json
+          grep -q "\\\"version\\\": \\\"$VERSION\\\"" manifest-beta.json
           want=$(grep -o 'updatePublicKey = "[^"]*"' native/app/src/main/kotlin/app/deepcinema/deep_cinema/core/Keys.kt | cut -d'"' -f2)
-          got=$(python3 -c "import json;print(json.load(open('manifest.json'))['key'])")
-          [ "$got" = "$want" ] || { echo "::error title=Подпись::ключ сборки не совпадает с ключом в программе"; exit 1; }
-          A="Authorization: OAuth $T"
-          API=https://cloud-api.yandex.net/v1/disk/resources
-          enc() { python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=''))" "$1"; }
-          up() { # файл → путь на Диске; лимит загрузки — через выпуск GitHub v$VERSION (как в build.yml).
-            for i in 1 2 3 4 5 6; do
-              lim="--speed-limit 1000000 --speed-time 60"; [ $i = 6 ] && lim=""
-              href=$(curl -s -H "$A" "$API/upload?path=$(enc "$2")&overwrite=true" | $PY -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
-              [ -z "$href" ] && break
-              code=$(curl -s -o /dev/null -w '%{http_code}' $lim --max-time 3600 -T "$1" "$href" || true)
-              case "$code" in 200|201|202) echo "$(basename "$1"): загружен"; return 0;; esac
-              echo "$(basename "$1"): попытка $i не удалась ($code)"; sleep 5
-            done
-            echo "$(basename "$1"): напрямую Диск не принимает — через выпуск GitHub"
-            gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
-              gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease --title "Yo-ho $VERSION" \
-                --notes "Файлы Yo-ho $VERSION (тестовая, новая основа ТВ)." > /dev/null 2>&1 || true
-            for i in 1 2 3; do gh release upload "v$VERSION" "$1" --clobber -R "$GITHUB_REPOSITORY" && break; sleep 10; done
-            url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/$(basename "$1")"
-            for i in 1 2 3; do
-              curl -s -o /dev/null -X DELETE -H "$A" "$API?path=$(enc "$2")&permanently=true" || true
-              sleep 3
-              op=$(curl -s -X POST -H "$A" "$API/upload?path=$(enc "$2")&url=$(enc "$url")" | $PY -c "import json,sys;print(json.load(sys.stdin).get('href',''))")
-              if [ -n "$op" ]; then
-                for k in $(seq 1 360); do
-                  st=$(curl -s -H "$A" "$op" | $PY -c "import json,sys;print(json.load(sys.stdin).get('status',''))" 2>/dev/null || true)
-                  [ "$st" = success ] && { echo "$(basename "$1"): Диск скачал с GitHub"; return 0; }
-                  [ "$st" = failed ] && break
-                  sleep 10
-                done
-              fi
-              echo "$(basename "$1"): Диск не скачал по ссылке (попытка $i)"; sleep 15
-            done
-            echo "::error title=Яндекс Диск::Не загрузился $(basename "$1")"; return 1
-          }
-          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho")" || true
-          curl -s -o /dev/null -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho/$VERSION")" || true
-          up "Yo-ho-$VERSION.apk" "disk:/Yo-ho/$VERSION/Yo-ho-$VERSION.apk"
-          # Все файлы на месте и совпадают по размеру — только потом список версий.
-          python3 - <<'PY'
-          import json, os, subprocess, sys, urllib.parse
-          m = json.load(open('manifest.json'))
-          A = 'Authorization: OAuth ' + os.environ['T']
-          bad = 0
-          for f in m['files']:
-              p = urllib.parse.quote(f"disk:/Yo-ho/{m['version']}/{f['name']}", safe='')
-              r = subprocess.run(['curl', '-s', '-H', A, f'https://cloud-api.yandex.net/v1/disk/resources?path={p}&fields=size'], capture_output=True, text=True).stdout
-              if json.loads(r or '{}').get('size') != f['size']:
-                  bad += 1
-                  print(f"::error title=Яндекс Диск::{f['name']}: не тот размер")
-          sys.exit(1 if bad else 0)
-          PY
-          # Только тестовый канал. manifest.json (у всех) не трогаем.
-          cp manifest.json manifest-beta.json
-          up manifest-beta.json "disk:/Yo-ho/manifest-beta.json"
-          echo "::notice title=Выпуск::Yo-ho $VERSION (новая основа) — в тестовом канале, только у владельца"
+          got=$(python3 -c "import json;print(json.load(open('manifest-beta.json'))['key'])")
+          [ "$got" = "$want" ] || { echo "::error title=Подпись::ключ обновления отличается от программы"; exit 1; }
+          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \\
+            gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease \\
+              --title "Yo-ho $VERSION (тестовая)" --notes "$NOTES"
+          # Сначала файл, затем подписанный манифест: неполную beta обновлятор не предлагает.
+          gh release upload "v$VERSION" "Yo-ho-$VERSION.apk" --clobber -R "$GITHUB_REPOSITORY"
+          gh release upload "v$VERSION" manifest-beta.json --clobber -R "$GITHUB_REPOSITORY"
+          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \\
+            --jq '.assets[].name' | grep -Fx "Yo-ho-$VERSION.apk"
+          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \\
+            --jq '.assets[].name' | grep -Fx "manifest-beta.json"
+          echo "::notice title=Тестовая версия::$VERSION: прямое скачивание GitHub, Яндекс Диск не используется"
 
       - name: Владельцу в Telegram — тестовая версия готова
         if: ${{ inputs.disk == 'yes' }}
