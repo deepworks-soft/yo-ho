@@ -147,7 +147,7 @@ jobs:
           python3 tool/update_sign.py sign-files "$KS" "$VERSION" part-android.json "Yo-ho-$VERSION.apk"
           printf '%s\n' "$NOTES" > notes.txt
           python3 tool/update_sign.py merge "$KS" "$VERSION" notes.txt manifest-beta.json -- part-android.json
-          grep -q "\\"version\\": \\"$VERSION\\"" manifest-beta.json
+          python3 -c 'import json,os; assert json.load(open("manifest-beta.json"))["version"] == os.environ["VERSION"]'
           want=$(grep -o 'updatePublicKey = "[^"]*"' native/app/src/main/kotlin/app/deepcinema/deep_cinema/core/Keys.kt | cut -d'"' -f2)
           got=$(python3 -c "import json;print(json.load(open('manifest-beta.json'))['key'])")
           [ "$got" = "$want" ] || { echo "::error title=Подпись::ключ обновления отличается от программы"; exit 1; }
