@@ -1,0 +1,61 @@
+name: Yo-ho — автоматический запуск тестовых сборок
+
+# Читает только номер следующей тестовой версии из закрытой ветки native.
+# Ничего не выпускает всем: запускает только build-native.yml с disk=yes.
+# GitHub может задерживать выполнение cron; повторные сборки одной версии блокируются тегом.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: yoho-native-auto-build-request
+  cancel-in-progress: false
+
+jobs:
+  start-test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read owner-controlled build request and start beta build once
+        shell: bash
+        env:
+          SRC_TOKEN: ${{ secrets.SRC_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SRC_TOKEN:-}" ]; then
+            echo '::error::SRC_TOKEN is not configured'
+            exit 1
+          fi
+          # Этот секрет уже используется существующей сборкой для чтения закрытого исходного кода.
+          B64="$(GH_TOKEN="$SRC_TOKEN" gh api \
+            'repos/kozenkovnikitavladimirovich-max/deep-cinema/contents/native/build-request.json?ref=native' \
+            --jq '.content')"
+          REQUEST="$(printf '%s' "$B64" | tr -d '\n' | base64 -d)"
+          VERSION="$(printf '%s' "$REQUEST" | jq -er '.version | strings')"
+          NOTES="$(printf '%s' "$REQUEST" | jq -r '.notes // "Тестовые исправления Kotlin TV"' | head -c 220)"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo '::error::Incorrect test build version'
+            exit 1
+          fi
+          # Отдельный неизменяемый тег отмечает уже обработанный запрос.
+          if gh api "repos/$GH_REPO/git/ref/tags/native-test-request-$VERSION" >/dev/null 2>&1; then
+            echo "Test build $VERSION already requested"
+            exit 0
+          fi
+          # Только закрытая рабочая ветка native и ТОЛЬКО тестовый manifest-beta.json.
+          gh workflow run build-native.yml --ref main \
+            -f "version=$VERSION" \
+            -f 'ref=native' \
+            -f 'disk=yes' \
+            -f "notes=$NOTES"
+          gh api -X POST "repos/$GH_REPO/git/refs" \
+            -f "ref=refs/tags/native-test-request-$VERSION" \
+            -f "sha=$GITHUB_SHA" >/dev/null
+          echo "Test build $VERSION dispatched once"
