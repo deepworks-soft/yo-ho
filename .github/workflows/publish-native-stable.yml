@@ -1,0 +1,105 @@
+name: Выпуск нативной Yo-ho для всех (GitHub + старый канал Диска)
+# Только ручной запрос версии в main. Не пересобирает подписанное приложение.
+# GitHub Releases — основной источник скачивания, Диск — попытка доставить
+# обновление старым Flutter/Android версиям, которые ещё не знают GitHub API.
+on:
+  push:
+    branches: [main]
+    paths: [native-stable-request.json]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: native-stable-promotion
+  cancel-in-progress: false
+jobs:
+  release:
+    name: Опубликовать проверенный APK и попробовать старый канал
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Выпустить подписанную тестовую версию в стабильный GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          V=$(jq -r '.version' native-stable-request.json)
+          [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Неверная версия"; exit 1; }
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+          TAG="v$V"
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets,isPrerelease > meta.json
+          [ "$(jq -r '.assets[].name' meta.json | grep -xc "Yo-ho-$V.apk")" = 1 ]
+          [ "$(jq -r '.assets[].name' meta.json | grep -xc manifest-beta.json)" = 1 ]
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" --pattern "Yo-ho-$V.apk"
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" --pattern manifest-beta.json
+          python3 - <<'PY'
+          import json,hashlib,os,sys
+          v=os.environ['VERSION']
+          m=json.load(open('manifest-beta.json'))
+          assert m['version']==v, 'wrong manifest version'
+          f=next((f for f in m['files'] if f['name']==f'Yo-ho-{v}.apk'),None)
+          assert f, 'missing universal APK in signed manifest'
+          raw=open(f['name'],'rb').read()
+          assert len(raw)==f['size'], 'size mismatch'
+          assert hashlib.sha256(raw).hexdigest().lower()==f['sha256'].lower(), 'checksum mismatch'
+          assert m['key'] and f.get('sig'), 'signed manifest required'
+          print(f"APK checked: {v}, {len(raw)} bytes")
+          PY
+          cp manifest-beta.json manifest.json
+          gh release upload "$TAG" manifest.json --clobber -R "$GITHUB_REPOSITORY"
+          gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --prerelease=false --latest             --title "Yo-ho $V · Android TV"             --notes "Стабильная версия для Android TV. APK подписан прежним ключом и устанавливается поверх Yo-ho, сохраняя данные. Скачать универсальный Yo-ho-$V.apk. Сайт: https://deepworks-soft.github.io/"
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json isPrerelease,assets             --jq '{isPrerelease: .isPrerelease, files: [.assets[].name]}'
+      - name: Доставка старым версиям через Яндекс Диск (отдельная попытка)
+        id: disk
+        continue-on-error: true
+        env:
+          T: ${{ secrets.YADISK_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "$T" ] || { echo "::error::Нет YADISK_TOKEN"; exit 1; }
+          A="Authorization: OAuth $T"
+          API="https://cloud-api.yandex.net/v1/disk/resources"
+          enc() { python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=""))' "$1"; }
+          # Папка версии нужна старому update.dart; файл загружаем напрямую
+          # и только после подтверждённого размера обновляем общий manifest.json.
+          curl -fsS -X PUT -H "$A" "$API?path=$(enc "disk:/Yo-ho/$VERSION")" >/dev/null || true
+          file="Yo-ho-$VERSION.apk"
+          dest="disk:/Yo-ho/$VERSION/$file"
+          href=$(curl -fsS -H "$A" "$API/upload?path=$(enc "$dest")&overwrite=true" | jq -r '.href // empty')
+          if [ -n "$href" ]; then
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 1800 -T "$file" "$href")
+            [ "$code" = 201 ] || [ "$code" = 202 ] || [ "$code" = 200 ] || { echo "::error::Диск: upload вернул $code"; exit 1; }
+          else
+            echo "::warning::Диск не дал ссылку прямой загрузки, пробую импорт из GitHub."
+            url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/$file"
+            op=$(curl -fsS -X POST -H "$A" "$API/upload?path=$(enc "$dest")&url=$(enc "$url")" | jq -r '.href // empty')
+            [ -n "$op" ] || { echo "::error::Импорт с GitHub не был принят"; exit 1; }
+            ok=no
+            for i in $(seq 1 120); do
+              status=$(curl -fsS -H "$A" "$op" | jq -r '.status // empty')
+              [ "$status" = success ] && { ok=yes; break; }
+              [ "$status" = failed ] && break
+              sleep 5
+            done
+            [ "$ok" = yes ] || { echo "::error::Диск не смог импортировать APK"; exit 1; }
+          fi
+          size=$(curl -fsS -H "$A" "$API?path=$(enc "$dest")&fields=size" | jq -r '.size // 0')
+          [ "$size" = "$(stat -c %s "$file")" ] || { echo "::error::Размер на Диске не совпадает"; exit 1; }
+          # ВАЖНО: только после полного APK разрешаем старым клиентам увидеть версию!
+          href=$(curl -fsS -H "$A" "$API/upload?path=$(enc "disk:/Yo-ho/manifest.json")&overwrite=true" | jq -r '.href // empty')
+          [ -n "$href" ] || { echo "::error::Диск не даёт загрузить основной manifest"; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 -T manifest.json "$href")
+          [ "$code" = 201 ] || [ "$code" = 202 ] || [ "$code" = 200 ] || { echo "::error::Манифест не записан"; exit 1; }
+          echo "::notice::Главный manifest на Диске обновлён: $VERSION"
+      - name: Итог распространения
+        if: always()
+        env:
+          DISK: ${{ steps.disk.outcome }}
+        run: |
+          echo "Стабильный GitHub: $VERSION; старые клиенты через Диск: $DISK"
+          if [ "$DISK" != success ]; then
+            echo "::warning title=Старый канал::GitHub стабилен, но Android/Flutter версии с Яндекс Диском НЕ получили автоматическое обновление. Установка с сайта работает."
+          fi
