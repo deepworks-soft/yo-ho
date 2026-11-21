@@ -19,7 +19,7 @@ jobs:
     if: >-
       github.event_name == 'issues' &&
       github.event.issue.user.login == 'kozenkovnikitavladimirovich-max' &&
-      startsWith(github.event.issue.title, '[native-build] ')
+      (startsWith(github.event.issue.title, '[native-build] ') || startsWith(github.event.issue.title, '[native-feature-build] '))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -32,18 +32,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          REF=native
           VERSION="${REQUEST_TITLE#\[native-build\] }"
+          if [[ "$REQUEST_TITLE" == "[native-feature-build] "* ]]; then
+            REF=feature/intro-and-community-playlists
+            VERSION="${REQUEST_TITLE#\[native-feature-build\] }"
+          fi
           if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             gh issue comment "$REQUEST_NUMBER" --body "Отклонено: номер версии должен быть вида 0.8.16."
             exit 1
           fi
-          # Этот workflow запускает ТОЛЬКО Kotlin-ветку native и ТОЛЬКО beta-манифест.
+          # Только Kotlin TV, только beta-манифест; feature-запрос использует изолированную ветку.
           gh workflow run build-native.yml --ref main \
             -f "version=$VERSION" \
-            -f "ref=native" \
+            -f "ref=$REF" \
             -f "disk=yes" \
             -f "notes=Тестовая версия Yo-ho $VERSION (исправления Kotlin TV)"
-          gh issue comment "$REQUEST_NUMBER" --body "Запрошена **тестовая** сборка Yo-ho $VERSION из ветки native. [Ход сборки](https://github.com/$GH_REPO/actions/workflows/build-native.yml). Публичный канал не затрагивается."
+          gh issue comment "$REQUEST_NUMBER" --body "Запрошена **тестовая** сборка Yo-ho $VERSION из ветки $REF. [Ход сборки](https://github.com/$GH_REPO/actions/workflows/build-native.yml). Публичный канал не затрагивается."
 
   notify-failure:
     if: >-
