@@ -94,6 +94,14 @@ jobs:
           mkdir -p tool/assets
           echo "$KEYSTORE_B64" | base64 -d > tool/assets/signing.keystore
 
+      - name: Bundle verified intro for feature build
+        if: ${{ inputs.ref == 'feature/intro-and-community-playlists' }}
+        run: |
+          set -euo pipefail
+          mkdir -p native/app/src/main/assets
+          curl -fsSL --retry 3 https://github.com/deepworks-soft/yo-ho/releases/download/intro-assets-v1/yoho-intro-v1.mp4 -o native/app/src/main/assets/yoho-intro-v1.mp4
+          echo '680410c3c8f1dffeddcecf6a85f980d083af70a115b71b36e3d8d9ca2d823713  native/app/src/main/assets/yoho-intro-v1.mp4' | sha256sum -c -
+
       - name: Сборка APK
         run: |
           set -o pipefail
