@@ -28,7 +28,7 @@ on:
         default: 'no'
 
 permissions:
-  contents: write   # выпуск GitHub — запасной путь на Диск, если прямая загрузка закрыта лимитом
+  contents: read # experiment is artifact-only
 
 concurrency:
   group: build
@@ -40,6 +40,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Refuse publication from B0 workflow
+        env:
+          SOURCE_REF: ${{ inputs.ref }}
+          PUBLISH: ${{ inputs.disk }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REF" = "experiment/yoho-core"
+          test "$PUBLISH" = "no"
+
       - uses: actions/checkout@v4
         with:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
@@ -66,6 +75,7 @@ jobs:
           gradle-version: '8.14.3'
 
       - name: Торрент-движок для Android (TorrServer)
+        if: ${{ inputs.ref != 'experiment/yoho-core' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -82,6 +92,72 @@ jobs:
           ls -la $J/*/ || true
           if [ -z "$A64" ]; then echo "::warning::TorrServer для Android не скачан — сборка без встроенного движка"; fi
           exit 0
+
+
+      - uses: actions/setup-go@v5
+        if: ${{ inputs.ref == 'experiment/yoho-core' }}
+        with:
+          go-version: '1.25.7'
+          cache: false
+
+      - name: Build and test pinned Yo-ho Core B0 plus verified Original
+        if: ${{ inputs.ref == 'experiment/yoho-core' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=0c48c9ac78de2864f5fc9341e8caf89d355a4850
+          SRC="$RUNNER_TEMP/yoho-core-b0-src"
+          OUT="$GITHUB_WORKSPACE/native/app/src/main/jniLibs"
+          NDK_VERSION=27.2.12479018
+          mkdir -p "$SRC" "$OUT"
+          git -C "$SRC" init -q
+          git -C "$SRC" remote add origin https://github.com/YouROK/TorrServer.git
+          git -C "$SRC" fetch --depth=1 origin "$BASE"
+          git -C "$SRC" checkout --detach FETCH_HEAD
+          test "$(git -C "$SRC" rev-parse HEAD)" = "$BASE"
+          test -f "$SRC/server/web/pages/template/pages/index.html"
+          export GOTOOLCHAIN=local
+          go version
+          if [ ! -d "$ANDROID_HOME/ndk/$NDK_VERSION" ]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION"
+          fi
+          TC="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          test -x "$TC/aarch64-linux-android21-clang"
+          cd "$SRC/server"
+          go mod download
+          go mod verify
+          go mod vendor
+          go test -mod=vendor -tags=nosqlite -timeout=8m ./torr/storage/torrstor ./torr ./web/api
+          build_one() {
+            local abi="$1" arch="$2" cc="$3" upstream="$4" hash="$5"
+            mkdir -p "$OUT/$abi"
+            curl -fsSL --retry 3 "https://github.com/YouROK/TorrServer/releases/download/MatriX.150/TorrServer-android-$upstream" -o "$OUT/$abi/libtorrserver.so"
+            printf '%s  %s\n' "$hash" "$OUT/$abi/libtorrserver.so" | sha256sum -c -
+            CC="$TC/$cc" CGO_ENABLED=1 GOOS=android GOARCH="$arch" GOARM=7 \
+              go build -mod=vendor -ldflags="-s -w -checklinkname=0 -X server/version.Version=YohoCore.B0.150" -tags=nosqlite -trimpath -o "$OUT/$abi/libyohocore.so" ./cmd
+            test -s "$OUT/$abi/libyohocore.so"
+            "$TC/llvm-readelf" -h "$OUT/$abi/libyohocore.so"
+          }
+          build_one arm64-v8a arm64 aarch64-linux-android21-clang arm64 760f18c6837c7fc1c440726a14e7534e3baca914b780fbc3ec28a38b6158aaf0
+          build_one armeabi-v7a arm armv7a-linux-androideabi21-clang arm7 852e15b8d4739ac94ce0e046bba5c7a929b2ad75f980849cef10c668971ee764
+          build_one x86_64 amd64 x86_64-linux-android21-clang amd64 b0ffd094e22e09b41e171bc0f06f865bcd8da9e089501e58d65b5dbe79249d54
+          cd "$OUT"
+          sha256sum */libtorrserver.so */libyohocore.so > "$RUNNER_TEMP/yoho-core-b0-sha256.txt"
+          printf 'Upstream commit: %s\nGo: %s\nNDK: %s\nVersion: YohoCore.B0.150\n' "$BASE" "$(go version)" "$NDK_VERSION" > "$RUNNER_TEMP/yoho-core-b0-provenance.txt"
+          # Archive only public engine sources and vendored dependencies, never APK app sources.
+          tar --exclude=.git -czf "$RUNNER_TEMP/yoho-core-b0-source.tar.gz" -C "$SRC" .
+
+      - name: Upload B0 corresponding engine sources and checksums
+        if: ${{ inputs.ref == 'experiment/yoho-core' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: yoho-core-b0-source-and-provenance
+          path: |
+            ${{ runner.temp }}/yoho-core-b0-source.tar.gz
+            ${{ runner.temp }}/yoho-core-b0-sha256.txt
+            ${{ runner.temp }}/yoho-core-b0-provenance.txt
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Каталог трекеров для встроенного поиска
         run: python3 tool/build_tracker_catalog.py || true
@@ -134,6 +210,21 @@ jobs:
           # Профиль прогрева (native/app/src/main/baseline-prof.txt) попал в APK — ТВ скомпилирует экраны заранее.
           if unzip -l Yo-ho-$VERSION.apk | grep -q 'assets/dexopt/baseline.prof'; then echo "::notice title=Профиль прогрева::assets/dexopt/baseline.prof есть"; else echo "::warning title=Профиль прогрева::нет assets/dexopt/baseline.prof в APK"; fi
           echo "::notice title=APK::$(ls -l Yo-ho-$VERSION*.apk | awk '{printf "%s %.1f МБ; ", $9, $5/1048576}') сборка $BUILD"
+
+      - name: Verify both engines are packaged byte-for-byte
+        if: ${{ inputs.ref == 'experiment/yoho-core' }}
+        run: |
+          set -euo pipefail
+          APK="Yo-ho-$VERSION.apk"
+          J=native/app/src/main/jniLibs
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            for so in libtorrserver.so libyohocore.so; do
+              unzip -p "$APK" "lib/$abi/$so" | cmp - "$J/$abi/$so"
+              SPLIT="Yo-ho-$VERSION-$abi.apk"
+              test -s "$SPLIT"
+              unzip -p "$SPLIT" "lib/$abi/$so" | cmp - "$J/$abi/$so"
+            done
+          done
 
       - name: Файлы для ручной установки (без Диска)
         uses: actions/upload-artifact@v4
