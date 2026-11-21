@@ -99,8 +99,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p native/app/src/main/assets
-          curl -fsSL --retry 3 https://github.com/deepworks-soft/yo-ho/releases/download/intro-assets-v1/yoho-intro-v1.mp4 -o native/app/src/main/assets/yoho-intro-v1.mp4
-          echo '680410c3c8f1dffeddcecf6a85f980d083af70a115b71b36e3d8d9ca2d823713  native/app/src/main/assets/yoho-intro-v1.mp4' | sha256sum -c -
+          curl -fsSL --retry 3 https://github.com/deepworks-soft/yo-ho/releases/download/intro-assets-v1/yoho-intro-v2.mp4 -o native/app/src/main/assets/yoho-intro-v2.mp4
+          echo '6c6a2ea7d2f3c46bfd880601489b8bd40e7da5c7c254bb3cce02313afded4b02  native/app/src/main/assets/yoho-intro-v2.mp4' | sha256sum -c -
 
       - name: Сборка APK
         run: |
