@@ -145,7 +145,7 @@ jobs:
           retention-days: 14
 
       - name: Подписать и опубликовать native beta непосредственно в открытом GitHub
-        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
           NOTES: ${{ (github.event_name == 'push' && 'TV UI fixes and playback timing' || inputs.notes) }}
@@ -174,7 +174,7 @@ jobs:
           echo "::notice title=Тестовая версия::$VERSION: прямое скачивание GitHub, Яндекс Диск не используется"
 
       - name: Владельцу в Telegram — тестовая версия готова
-        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         continue-on-error: true
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
