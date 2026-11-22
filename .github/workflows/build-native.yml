@@ -47,7 +47,7 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ${{ (github.event_name == 'push' && 'experiment/tv-feedback-0.8.51' || inputs.ref) }}
+          ref: ${{ (github.event_name == 'push' && 'experiment/tv-feedback-0.8.50' || inputs.ref) }}
           persist-credentials: false
 
       - name: Номер версии
