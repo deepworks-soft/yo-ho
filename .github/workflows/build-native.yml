@@ -1,5 +1,5 @@
 name: Сборка Yo-ho для ТВ (новая основа)
-run-name: Yo-ho TV test ${{ inputs.version }}
+run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.50' || inputs.version) }}
 
 # Новая ТВ-версия на родном Android (Kotlin + Compose, папка native/ в закрытом deep-cinema; план — docs/NATIVE.md).
 # Запуск вручную, только после «да» владельца. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
@@ -12,6 +12,8 @@ run-name: Yo-ho TV test ${{ inputs.version }}
 # disk=no — только файлы в артефакты сборки (проверить, что собирается; на Диск ничего не идёт).
 # Номер сборки = 5000 + номер запуска: заведомо больше, чем у Flutter-версии (1100 + запуск).
 on:
+  push:
+    branches: [build-request-0.8.50]
   workflow_dispatch:
     inputs:
       version:
@@ -45,12 +47,12 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ${{ inputs.ref }}
+          ref: ${{ (github.event_name == 'push' && 'experiment/tv-feedback-0.8.50' || inputs.ref) }}
           persist-credentials: false
 
       - name: Номер версии
         env:
-          V: ${{ inputs.version }}
+          V: ${{ (github.event_name == 'push' && '0.8.50' || inputs.version) }}
         run: |
           echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
           echo "VERSION=$V" >> "$GITHUB_ENV"
@@ -95,7 +97,7 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > tool/assets/signing.keystore
 
       - name: Bundle verified intro for feature build
-        if: ${{ inputs.ref == 'feature/intro-and-community-playlists' || inputs.ref == 'experiment/all-features-0.8.49' || inputs.ref == 'experiment/tv-feedback-0.8.50' }}
+        if: ${{ (github.event_name == 'push' && 'experiment/tv-feedback-0.8.50' || inputs.ref) == 'feature/intro-and-community-playlists' || (github.event_name == 'push' && 'experiment/tv-feedback-0.8.50' || inputs.ref) == 'experiment/all-features-0.8.49' || (github.event_name == 'push' && 'experiment/tv-feedback-0.8.50' || inputs.ref) == 'experiment/tv-feedback-0.8.50' }}
         run: |
           set -euo pipefail
           mkdir -p native/app/src/main/assets
@@ -143,10 +145,10 @@ jobs:
           retention-days: 14
 
       - name: Подписать и опубликовать native beta непосредственно в открытом GitHub
-        if: ${{ inputs.disk == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ inputs.notes }}
+          NOTES: ${{ (github.event_name == 'push' && 'TV UI fixes and playback timing' || inputs.notes) }}
         run: |
           set -euo pipefail
           pip install -q cryptography
@@ -172,12 +174,12 @@ jobs:
           echo "::notice title=Тестовая версия::$VERSION: прямое скачивание GitHub, Яндекс Диск не используется"
 
       - name: Владельцу в Telegram — тестовая версия готова
-        if: ${{ inputs.disk == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
         continue-on-error: true
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: ${{ inputs.notes }}
+          NOTES: ${{ (github.event_name == 'push' && 'TV UI fixes and playback timing' || inputs.notes) }}
         run: |
           [ -z "$TG" ] || [ -z "$CHAT" ] && exit 0
           python3 - <<'PY' > tg.json
