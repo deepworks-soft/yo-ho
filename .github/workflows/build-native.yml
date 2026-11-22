@@ -1,5 +1,5 @@
 name: Сборка Yo-ho для ТВ (новая основа)
-run-name: Yo-ho TV test ${{ inputs.version }}
+run-name: Yo-ho Core B0 test ${{ inputs.version || '0.8.46' }}
 
 # Новая ТВ-версия на родном Android (Kotlin + Compose, папка native/ в закрытом deep-cinema; план — docs/NATIVE.md).
 # Запуск вручную, только после «да» владельца. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
@@ -12,6 +12,11 @@ run-name: Yo-ho TV test ${{ inputs.version }}
 # disk=no — только файлы в артефакты сборки (проверить, что собирается; на Диск ничего не идёт).
 # Номер сборки = 5000 + номер запуска: заведомо больше, чем у Flutter-версии (1100 + запуск).
 on:
+  push:
+    branches: [experiment/yoho-core]
+    paths:
+      - '.github/workflows/build-native.yml'
+      - '.github/yoho-core-build-request.txt'
   workflow_dispatch:
     inputs:
       version:
@@ -31,7 +36,7 @@ permissions:
   contents: read # experiment is artifact-only
 
 concurrency:
-  group: build
+  group: yoho-core-b0-experiment
   cancel-in-progress: false
 
 jobs:
@@ -42,10 +47,11 @@ jobs:
     steps:
       - name: Refuse publication from B0 workflow
         env:
-          SOURCE_REF: ${{ inputs.ref }}
-          PUBLISH: ${{ inputs.disk }}
+          SOURCE_REF: ${{ inputs.ref || 'experiment/yoho-core' }}
+          PUBLISH: ${{ inputs.disk || 'no' }}
         run: |
           set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/experiment/yoho-core"
           test "$SOURCE_REF" = "experiment/yoho-core"
           test "$PUBLISH" = "no"
 
@@ -54,12 +60,12 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || 'experiment/yoho-core' }}
           persist-credentials: false
 
       - name: Номер версии
         env:
-          V: ${{ inputs.version }}
+          V: ${{ inputs.version || '0.8.46' }}
         run: |
           echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
           echo "VERSION=$V" >> "$GITHUB_ENV"
@@ -75,7 +81,7 @@ jobs:
           gradle-version: '8.14.3'
 
       - name: Торрент-движок для Android (TorrServer)
-        if: ${{ inputs.ref != 'experiment/yoho-core' }}
+        if: ${{ (inputs.ref || 'experiment/yoho-core') != 'experiment/yoho-core' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -95,13 +101,13 @@ jobs:
 
 
       - uses: actions/setup-go@v5
-        if: ${{ inputs.ref == 'experiment/yoho-core' }}
+        if: ${{ (inputs.ref || 'experiment/yoho-core') == 'experiment/yoho-core' }}
         with:
           go-version: '1.25.7'
           cache: false
 
       - name: Build and test pinned Yo-ho Core B0 plus verified Original
-        if: ${{ inputs.ref == 'experiment/yoho-core' }}
+        if: ${{ (inputs.ref || 'experiment/yoho-core') == 'experiment/yoho-core' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -148,7 +154,7 @@ jobs:
           tar --exclude=.git -czf "$RUNNER_TEMP/yoho-core-b0-source.tar.gz" -C "$SRC" .
 
       - name: Upload B0 corresponding engine sources and checksums
-        if: ${{ inputs.ref == 'experiment/yoho-core' }}
+        if: ${{ (inputs.ref || 'experiment/yoho-core') == 'experiment/yoho-core' }}
         uses: actions/upload-artifact@v4
         with:
           name: yoho-core-b0-source-and-provenance
@@ -212,7 +218,7 @@ jobs:
           echo "::notice title=APK::$(ls -l Yo-ho-$VERSION*.apk | awk '{printf "%s %.1f МБ; ", $9, $5/1048576}') сборка $BUILD"
 
       - name: Verify both engines are packaged byte-for-byte
-        if: ${{ inputs.ref == 'experiment/yoho-core' }}
+        if: ${{ (inputs.ref || 'experiment/yoho-core') == 'experiment/yoho-core' }}
         run: |
           set -euo pipefail
           APK="Yo-ho-$VERSION.apk"
@@ -232,52 +238,6 @@ jobs:
           name: files-native-${{ env.VERSION }}
           path: Yo-ho-${{ env.VERSION }}*.apk
           retention-days: 14
-
-      - name: Подписать и опубликовать native beta непосредственно в открытом GitHub
-        if: ${{ inputs.disk == 'yes' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ inputs.notes }}
-        run: |
-          set -euo pipefail
-          pip install -q cryptography
-          KS=tool/assets/signing.keystore
-          # Все ABI доступны в artifacts; в beta-release размещаем универсальный APK.
-          python3 tool/update_sign.py sign-files "$KS" "$VERSION" part-android.json "Yo-ho-$VERSION.apk"
-          printf '%s\n' "$NOTES" > notes.txt
-          python3 tool/update_sign.py merge "$KS" "$VERSION" notes.txt manifest-beta.json -- part-android.json
-          python3 -c 'import json,os; assert json.load(open("manifest-beta.json"))["version"] == os.environ["VERSION"]'
-          want=$(grep -o 'updatePublicKey = "[^"]*"' native/app/src/main/kotlin/app/deepcinema/deep_cinema/core/Keys.kt | cut -d'"' -f2)
-          got=$(python3 -c "import json;print(json.load(open('manifest-beta.json'))['key'])")
-          [ "$got" = "$want" ] || { echo "::error title=Подпись::ключ обновления отличается от программы"; exit 1; }
-          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease \
-              --title "Yo-ho $VERSION (тестовая)" --notes "$NOTES"
-          # Сначала файл, затем подписанный манифест: неполную beta обновлятор не предлагает.
-          gh release upload "v$VERSION" "Yo-ho-$VERSION.apk" --clobber -R "$GITHUB_REPOSITORY"
-          gh release upload "v$VERSION" manifest-beta.json --clobber -R "$GITHUB_REPOSITORY"
-          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \
-            --jq '.assets[].name' | grep -Fx "Yo-ho-$VERSION.apk"
-          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \
-            --jq '.assets[].name' | grep -Fx "manifest-beta.json"
-          echo "::notice title=Тестовая версия::$VERSION: прямое скачивание GitHub, Яндекс Диск не используется"
-
-      - name: Владельцу в Telegram — тестовая версия готова
-        if: ${{ inputs.disk == 'yes' }}
-        continue-on-error: true
-        env:
-          TG: ${{ secrets.TELEGRAM_TOKEN }}
-          CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: ${{ inputs.notes }}
-        run: |
-          [ -z "$TG" ] || [ -z "$CHAT" ] && exit 0
-          python3 - <<'PY' > tg.json
-          import json, os
-          v = os.environ.get('VERSION', '')
-          text = f"🧪 Тестовая Yo-ho {v} для ТВ на новой основе готова — придёт обновлением на ваш телевизор (если включены «Тестовые версии»).\n{os.environ.get('NOTES', '')}".strip()
-          print(json.dumps({"chat_id": os.environ['CHAT'], "text": text}, ensure_ascii=False))
-          PY
-          curl -s -o /dev/null -H 'content-type: application/json' --data @tg.json "https://api.telegram.org/bot$TG/sendMessage" || true
 
       - name: Убрать ключ подписи
         if: always()
