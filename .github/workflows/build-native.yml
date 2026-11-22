@@ -95,7 +95,7 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > tool/assets/signing.keystore
 
       - name: Bundle verified intro for feature build
-        if: ${{ inputs.ref == 'feature/intro-and-community-playlists' || inputs.ref == 'experiment/all-features-0.8.49' }}
+        if: ${{ inputs.ref == 'feature/intro-and-community-playlists' || inputs.ref == 'experiment/all-features-0.8.49' || inputs.ref == 'experiment/tv-feedback-0.8.50' }}
         run: |
           set -euo pipefail
           mkdir -p native/app/src/main/assets
