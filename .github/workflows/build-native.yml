@@ -148,7 +148,7 @@ jobs:
         if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ (github.event_name == 'push' && 'Диагностика запуска: без заставки, замеры TorrServer и ошибки Media3' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Диагностика запуска без заставки и замеры TorrServer и Media3' || inputs.notes) }}
         run: |
           set -euo pipefail
           pip install -q cryptography
@@ -179,7 +179,7 @@ jobs:
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: ${{ (github.event_name == 'push' && 'Диагностика запуска: без заставки, замеры TorrServer и ошибки Media3' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Диагностика запуска без заставки и замеры TorrServer и Media3' || inputs.notes) }}
         run: |
           [ -z "$TG" ] || [ -z "$CHAT" ] && exit 0
           python3 - <<'PY' > tg.json
