@@ -148,7 +148,7 @@ jobs:
         if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ (github.event_name == 'push' && 'Плавность меню и главной на Android 9' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Экономия памяти изображений на Android 9, анимации как в 0.8.53' || inputs.notes) }}
         run: |
           set -euo pipefail
           pip install -q cryptography
