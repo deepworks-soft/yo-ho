@@ -148,7 +148,7 @@ jobs:
         if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ (github.event_name == 'push' && 'Автосмена зависших раздач и исправления серий поиска и трейлеров' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Автосмена зависших раздач и исправления серий поиска и трейлеров (Kotlin fix)' || inputs.notes) }}
         run: |
           set -euo pipefail
           pip install -q cryptography
