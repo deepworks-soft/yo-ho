@@ -1,33 +1,14 @@
 name: Сборка Yo-ho для ТВ (новая основа)
-run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.75' || inputs.version) }}
+run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.76' || inputs.version) }}
 
 # Новая ТВ-версия на родном Android (Kotlin + Compose, папка native/ в закрытом deep-cinema; план — docs/NATIVE.md).
-# Тестовая сборка 0.8.75 согласована владельцем; запуск по push только из этой ветки. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
+# Тестовая сборка 0.8.76 согласована владельцем; запуск по push только из этой ветки. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
 # (manifest-beta.json, видит лишь владелец с «Тестовыми версиями»); выбора «всем» здесь нет.
 #
-# Что делает: берёт код из ветки (по умолчанию native), скачивает торрент-движок, собирает APK тем же ключом
-# подписи, что у Flutter-версии (секрет ANDROID_KEYSTORE_B64) — поэтому обновление встаёт поверх 0.7.7 и данные
-# остаются; проверяет подпись; подписывает файлы для обновлятора (tool/update_sign.py) и кладёт их на Яндекс Диск
-# (обход лимита — через выпуск GitHub, как в build.yml); последним — manifest-beta.json; пишет владельцу в Telegram.
-# disk=no — только файлы в артефакты сборки (проверить, что собирается; на Диск ничего не идёт).
-# Номер сборки = 5000 + номер запуска: заведомо больше, чем у Flutter-версии (1100 + запуск).
+# Isolated staging APK, manual installation only. No production or beta update manifest.
 on:
   push:
-    branches: [build-request-0.8.75]
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Номер версии, например 0.8.0'
-        required: true
-      notes:
-        description: 'Что нового'
-        default: 'Тестовая версия на новой основе'
-      ref:
-        description: 'Ветка кода'
-        default: native
-      disk:
-        description: 'Выкладывать на Яндекс Диск в тестовый канал (no — только файлы в артефакты)'
-        default: 'no'
+    branches: [build-request-0.8.76]
 
 permissions:
   contents: write   # выпуск GitHub — запасной путь на Диск, если прямая загрузка закрыта лимитом
@@ -47,17 +28,17 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ${{ (github.event_name == 'push' && '50d12d37260f19fe9ad393a9fd9e98f0d340f364' || inputs.ref) }}
+          ref: ${{ (github.event_name == 'push' && 'c4dbd6cf1129b10a4d0638335eefefd740b31eae' || inputs.ref) }}
           persist-credentials: false
-          # Validation source commit: 50d12d37260f19fe9ad393a9fd9e98f0d340f364
+          # Validation source commit: c4dbd6cf1129b10a4d0638335eefefd740b31eae
 
       - uses: actions/setup-node@v4
-        if: github.event_name == 'push' || inputs.ref == 'experiment/recap-tv-design'
+        if: github.event_name == 'push' || inputs.ref == 'experiment/staging-tv-0.8.76'
         with:
           node-version: '24'
 
       - name: Проверка аккаунтов, миграции и совместимости Worker
-        if: github.event_name == 'push' || inputs.ref == 'experiment/recap-tv-design'
+        if: github.event_name == 'push' || inputs.ref == 'experiment/staging-tv-0.8.76'
         working-directory: tool/bridge
         run: |
           set -euo pipefail
@@ -70,7 +51,7 @@ jobs:
 
       - name: Номер версии
         env:
-          V: ${{ (github.event_name == 'push' && '0.8.75' || inputs.version) }}
+          V: ${{ (github.event_name == 'push' && '0.8.76' || inputs.version) }}
         run: |
           echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
           echo "VERSION=$V" >> "$GITHUB_ENV"
@@ -115,7 +96,7 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > tool/assets/signing.keystore
 
       - name: Bundle verified intro for feature build
-        if: ${{ (github.event_name == 'push' && 'experiment/recap-tv-design' || inputs.ref) == 'feature/intro-and-community-playlists' || (github.event_name == 'push' && 'experiment/recap-tv-design' || inputs.ref) == 'experiment/all-features-0.8.49' || (github.event_name == 'push' && 'experiment/recap-tv-design' || inputs.ref) == 'experiment/recap-tv-design' }}
+        if: ${{ (github.event_name == 'push' && 'experiment/staging-tv-0.8.76' || inputs.ref) == 'feature/intro-and-community-playlists' || (github.event_name == 'push' && 'experiment/staging-tv-0.8.76' || inputs.ref) == 'experiment/all-features-0.8.49' || (github.event_name == 'push' && 'experiment/staging-tv-0.8.76' || inputs.ref) == 'experiment/staging-tv-0.8.76' }}
         run: |
           set -euo pipefail
           mkdir -p native/app/src/main/assets
@@ -136,67 +117,42 @@ jobs:
           [ -z "$E" ] && E=$(tail -n 60 build.log)
           echo "::error title=Сборка::$(printf '%s' "$E" | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')"
 
-      - name: R8 mapping для диагностики
-        uses: actions/upload-artifact@v4
-        with:
-          name: mapping-native-${{ env.VERSION }}
-          path: native/app/build/outputs/mapping/release/mapping.txt
-          retention-days: 90
-
       - name: Имена файлов и проверка подписи
         run: |
           set -e
           O=native/app/build/outputs/apk/release
           ls -la $O
-          cp $O/app-universal-release.apk Yo-ho-$VERSION.apk
+          cp $O/app-universal-release.apk Yo-ho-Test-$VERSION.apk
           for abi in arm64-v8a armeabi-v7a x86_64; do
-            [ -f $O/app-$abi-release.apk ] && cp $O/app-$abi-release.apk Yo-ho-$VERSION-$abi.apk
+            [ -f $O/app-$abi-release.apk ] && cp $O/app-$abi-release.apk Yo-ho-Test-$VERSION-$abi.apk
           done
           # Подписано тем же ключом, что Flutter-версия? Иначе ТВ не поставит обновление поверх.
-          for f in Yo-ho-$VERSION*.apk; do python3 tool/check_apk_sign.py "$f" tool/assets/signing.keystore; done
+          for f in Yo-ho-Test-$VERSION*.apk; do python3 tool/check_apk_sign.py "$f" tool/assets/signing.keystore; done
           # Тот же пакет и номер сборки больше прежних.
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
-          "$BT/aapt2" dump badging Yo-ho-$VERSION.apk | head -1 | tee badging.txt
-          grep -q "name='app.deepcinema.deep_cinema'" badging.txt || { echo "::error title=Пакет::не тот applicationId"; exit 1; }
+          "$BT/aapt2" dump badging Yo-ho-Test-$VERSION.apk | head -1 | tee badging.txt
+          grep -q "name='app.deepcinema.deep_cinema.test'" badging.txt || { echo "::error title=Пакет::не тот applicationId"; exit 1; }
           # Профиль прогрева (native/app/src/main/baseline-prof.txt) попал в APK — ТВ скомпилирует экраны заранее.
-          if unzip -l Yo-ho-$VERSION.apk | grep -q 'assets/dexopt/baseline.prof'; then echo "::notice title=Профиль прогрева::assets/dexopt/baseline.prof есть"; else echo "::warning title=Профиль прогрева::нет assets/dexopt/baseline.prof в APK"; fi
-          echo "::notice title=APK::$(ls -l Yo-ho-$VERSION*.apk | awk '{printf "%s %.1f МБ; ", $9, $5/1048576}') сборка $BUILD"
+          if unzip -l Yo-ho-Test-$VERSION.apk | grep -q 'assets/dexopt/baseline.prof'; then echo "::notice title=Профиль прогрева::assets/dexopt/baseline.prof есть"; else echo "::warning title=Профиль прогрева::нет assets/dexopt/baseline.prof в APK"; fi
+          echo "::notice title=APK::$(ls -l Yo-ho-Test-$VERSION*.apk | awk '{printf "%s %.1f МБ; ", $9, $5/1048576}') сборка $BUILD"
 
       - name: Файлы для ручной установки (без Диска)
         uses: actions/upload-artifact@v4
         with:
           name: files-native-${{ env.VERSION }}
-          path: Yo-ho-${{ env.VERSION }}*.apk
+          path: Yo-ho-Test-${{ env.VERSION }}*.apk
           retention-days: 14
 
-      - name: Подписать и опубликовать native beta непосредственно в открытом GitHub
-        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
+      - name: Publish isolated staging APK (no update manifest)
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ (github.event_name == 'push' && 'Новый полноэкранный дизайн итогов года с управлением пультом, статистикой и постерами. Убраны экранные кнопки Назад в итогах года и открытом плейлисте.' || inputs.notes) }}
         run: |
           set -euo pipefail
-          pip install -q cryptography
-          KS=tool/assets/signing.keystore
-          # Все ABI доступны в artifacts; в beta-release размещаем универсальный APK.
-          python3 tool/update_sign.py sign-files "$KS" "$VERSION" part-android.json "Yo-ho-$VERSION.apk"
-          printf '%s\n' "$NOTES" > notes.txt
-          python3 tool/update_sign.py merge "$KS" "$VERSION" notes.txt manifest-beta.json -- part-android.json
-          python3 -c 'import json,os; assert json.load(open("manifest-beta.json"))["version"] == os.environ["VERSION"]'
-          want=$(grep -o 'updatePublicKey = "[^"]*"' native/app/src/main/kotlin/app/deepcinema/deep_cinema/core/Keys.kt | cut -d'"' -f2)
-          got=$(python3 -c "import json;print(json.load(open('manifest-beta.json'))['key'])")
-          [ "$got" = "$want" ] || { echo "::error title=Подпись::ключ обновления отличается от программы"; exit 1; }
-          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "v$VERSION" -R "$GITHUB_REPOSITORY" --target main --prerelease \
-              --title "Yo-ho $VERSION (тестовая)" --notes "$NOTES"
-          # Сначала файл, затем подписанный манифест: неполную beta обновлятор не предлагает.
-          gh release upload "v$VERSION" "Yo-ho-$VERSION.apk" --clobber -R "$GITHUB_REPOSITORY"
-          gh release upload "v$VERSION" manifest-beta.json --clobber -R "$GITHUB_REPOSITORY"
-          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \
-            --jq '.assets[].name' | grep -Fx "Yo-ho-$VERSION.apk"
-          gh release view "v$VERSION" -R "$GITHUB_REPOSITORY" --json assets \
-            --jq '.assets[].name' | grep -Fx "manifest-beta.json"
-          echo "::notice title=Тестовая версия::$VERSION: прямое скачивание GitHub, Яндекс Диск не используется"
+          tag="staging-v$VERSION"
+          gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create "$tag" -R "$GITHUB_REPOSITORY" --target main --prerelease --title "Yo-ho Test $VERSION" --notes "Separate staging application. Manual install only. No stable or beta update manifest."
+          gh release upload "$tag" "Yo-ho-Test-$VERSION.apk" --clobber -R "$GITHUB_REPOSITORY"
+          gh release view "$tag" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -Fx "Yo-ho-Test-$VERSION.apk"
 
       - name: Владельцу в Telegram — тестовая версия готова
         if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
@@ -204,14 +160,14 @@ jobs:
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: ${{ (github.event_name == 'push' && 'Новый полноэкранный дизайн итогов года с управлением пультом, статистикой и постерами. Убраны экранные кнопки Назад в итогах года и открытом плейлисте.' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Отдельное приложение Yo-ho Test: новый тестовый Worker, плейлисты, друзья и авторизация. Основная версия и её данные не изменяются.' || inputs.notes) }}
         run: |
           if [ -z "$TG" ] || [ -z "$CHAT" ]; then echo '::warning::Telegram не настроен'; exit 0; fi
           python3 - <<'PY' > tg.json
           import json, os
           v = os.environ.get('VERSION', '')
-          text = f"🧪 Тестовая Yo-ho {v} для ТВ на новой основе готова — придёт обновлением на ваш телевизор (если включены «Тестовые версии»).\n{os.environ.get('NOTES', '')}".strip()
-          text += f"\nAPK: https://github.com/deepworks-soft/yo-ho/releases/download/v{v}/Yo-ho-{v}.apk"
+          text = f"🧪 Yo-ho Test {v} готов. Установите вручную рядом с основной версией, войдите отдельным тестовым аккаунтом.\n{os.environ.get('NOTES', '')}".strip()
+          text += f"\nAPK: https://github.com/deepworks-soft/yo-ho/releases/download/staging-v{v}/Yo-ho-Test-{v}.apk"
           print(json.dumps({"chat_id": os.environ['CHAT'], "text": text}, ensure_ascii=False))
           PY
           response=$(mktemp)
