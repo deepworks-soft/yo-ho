@@ -172,7 +172,7 @@ jobs:
         if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ (github.event_name == 'push' && 'Аккаунты Yo-ho: привязки способов входа, выбор никнейма и приглашения по провайдеру. Новые способы доступны после настройки сервера.' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Аккаунты Yo-ho — привязки способов входа, выбор никнейма и приглашения по провайдеру. Новые способы доступны после настройки сервера.' || inputs.notes) }}
         run: |
           set -euo pipefail
           pip install -q cryptography
@@ -203,7 +203,7 @@ jobs:
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: ${{ (github.event_name == 'push' && 'Аккаунты Yo-ho: привязки способов входа, выбор никнейма и приглашения по провайдеру. Новые способы доступны после настройки сервера.' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Аккаунты Yo-ho — привязки способов входа, выбор никнейма и приглашения по провайдеру. Новые способы доступны после настройки сервера.' || inputs.notes) }}
         run: |
           [ -z "$TG" ] || [ -z "$CHAT" ] && exit 0
           python3 - <<'PY' > tg.json
