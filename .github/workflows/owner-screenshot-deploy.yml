@@ -58,7 +58,7 @@ jobs:
           jq -e '.result.bindings | map(.name) | (index("DATA") != null and index("SOCIAL") != null and index("SESSION_SECRET") != null and index("TELEGRAM_TOKEN") != null and index("TELEGRAM_CHAT") != null)' "$tmp/settings.json" >/dev/null
           curl -fsS --max-time 20 -H 'Accept: application/json' "$origin/status" -o "$tmp/status-before.json"
           jq -e 'type=="object"' "$tmp/status-before.json" >/dev/null
-          curl -fsS --max-time 45 -H "Authorization: Bearer $CF_TOKEN" -D "$tmp/headers" "$target/content" -o "$tmp/raw"
+          curl -fsS --max-time 45 -H "Authorization: Bearer $CF_TOKEN" -D "$tmp/headers" "$target/content/v2" -o "$tmp/raw"
           python3 - "$tmp" <<'PY'
           import sys, pathlib, re, email, email.policy, json
           d=pathlib.Path(sys.argv[1])
