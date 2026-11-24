@@ -1,8 +1,8 @@
 name: Сборка Yo-ho для ТВ (новая основа)
-run-name: Yo-ho TV test 0.8.77
+run-name: Yo-ho TV test 0.8.78
 
 # Новая ТВ-версия на родном Android (Kotlin + Compose, папка native/ в закрытом deep-cinema; план — docs/NATIVE.md).
-# Тестовая сборка 0.8.77 согласована владельцем; запуск по push только из этой ветки. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
+# Тестовая сборка 0.8.78 согласована владельцем; запуск по push только из этой ветки. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
 # (manifest-beta.json, видит лишь владелец с «Тестовыми версиями»); выбора «всем» здесь нет.
 #
 # Что делает: берёт код из ветки (по умолчанию native), скачивает торрент-движок, собирает APK тем же ключом
@@ -13,7 +13,7 @@ run-name: Yo-ho TV test 0.8.77
 # Номер сборки = 5000 + номер запуска: заведомо больше, чем у Flutter-версии (1100 + запуск).
 on:
   push:
-    branches: [build-request-0.8.77]
+    branches: [build-request-0.8.78]
 
 permissions:
   contents: write   # выпуск GitHub — запасной путь на Диск, если прямая загрузка закрыта лимитом
@@ -33,9 +33,9 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 50d12d37260f19fe9ad393a9fd9e98f0d340f364
+          ref: c062970efd32aa84c3b23419f1eb14c521a1d0e4
           persist-credentials: false
-          # Validation source commit: 50d12d37260f19fe9ad393a9fd9e98f0d340f364
+          # Validation source commit: c062970efd32aa84c3b23419f1eb14c521a1d0e4
 
       - uses: actions/setup-node@v4
         with:
@@ -54,7 +54,7 @@ jobs:
 
       - name: Номер версии
         env:
-          V: '0.8.77'
+          V: '0.8.78'
         run: |
           echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
           echo "VERSION=$V" >> "$GITHUB_ENV"
@@ -156,7 +156,7 @@ jobs:
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: 'Удалён переключатель тестового сервера. Восстановлена прежняя схема Yo-ho, сохранены плейлисты и дизайн итогов года.'
+          NOTES: 'Новый яркий раздел «Итоги года», больше персональной статистики и стабильные обновления через GitHub. Тестовый канал и данные сохранены.'
         run: |
           set -euo pipefail
           pip install -q cryptography
@@ -187,7 +187,7 @@ jobs:
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: 'Удалён переключатель тестового сервера. Восстановлена прежняя схема Yo-ho, сохранены плейлисты и дизайн итогов года.'
+          NOTES: 'Новый яркий раздел «Итоги года», больше персональной статистики и стабильные обновления через GitHub. Тестовый канал и данные сохранены.'
         run: |
           if [ -z "$TG" ] || [ -z "$CHAT" ]; then echo '::warning::Telegram не настроен'; exit 0; fi
           python3 - <<'PY' > tg.json
