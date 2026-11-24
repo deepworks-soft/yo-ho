@@ -1,8 +1,8 @@
 name: Сборка Yo-ho для ТВ (новая основа)
-run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.72' || inputs.version) }}
+run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.73' || inputs.version) }}
 
 # Новая ТВ-версия на родном Android (Kotlin + Compose, папка native/ в закрытом deep-cinema; план — docs/NATIVE.md).
-# Тестовая сборка 0.8.72 согласована владельцем; запуск по push только из этой ветки. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
+# Тестовая сборка 0.8.73 согласована владельцем; запуск по push только из этой ветки. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
 # (manifest-beta.json, видит лишь владелец с «Тестовыми версиями»); выбора «всем» здесь нет.
 #
 # Что делает: берёт код из ветки (по умолчанию native), скачивает торрент-движок, собирает APK тем же ключом
@@ -13,7 +13,7 @@ run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.72' || inputs.v
 # Номер сборки = 5000 + номер запуска: заведомо больше, чем у Flutter-версии (1100 + запуск).
 on:
   push:
-    branches: [build-request-0.8.72]
+    branches: [build-request-0.8.73]
   workflow_dispatch:
     inputs:
       version:
@@ -47,30 +47,30 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ${{ (github.event_name == 'push' && '9b5d28ce2e301d456fc0e497e991437fe10a8c0a' || inputs.ref) }}
+          ref: ${{ (github.event_name == 'push' && '955a2cb205b51d4b853501608b0eaa4f3da1094f' || inputs.ref) }}
           persist-credentials: false
-          # Validation source commit: 9b5d28ce2e301d456fc0e497e991437fe10a8c0a
+          # Validation source commit: 955a2cb205b51d4b853501608b0eaa4f3da1094f
 
       - uses: actions/setup-node@v4
-        if: github.event_name == 'push' || inputs.ref == 'experiment/auth-polish-0.8.72'
+        if: github.event_name == 'push' || inputs.ref == 'experiment/playlists-0.8.73'
         with:
           node-version: '24'
 
       - name: Проверка аккаунтов, миграции и совместимости Worker
-        if: github.event_name == 'push' || inputs.ref == 'experiment/auth-polish-0.8.72'
+        if: github.event_name == 'push' || inputs.ref == 'experiment/playlists-0.8.73'
         working-directory: tool/bridge
         run: |
           set -euo pipefail
           cp worker.js worker.mjs
           node --check worker.mjs
-          for suite in identity external migration club social keys community chunks curated watch; do
+          for suite in identity external migration club social keys community chunks curated watch playlists; do
             node "${suite}_test.mjs" > "$RUNNER_TEMP/yoho-test.log" 2>&1 || { echo "::error::Не прошёл тест $suite"; tail -n 35 "$RUNNER_TEMP/yoho-test.log"; exit 1; }
             echo "OK $suite"
           done
 
       - name: Номер версии
         env:
-          V: ${{ (github.event_name == 'push' && '0.8.72' || inputs.version) }}
+          V: ${{ (github.event_name == 'push' && '0.8.73' || inputs.version) }}
         run: |
           echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
           echo "VERSION=$V" >> "$GITHUB_ENV"
@@ -115,7 +115,7 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > tool/assets/signing.keystore
 
       - name: Bundle verified intro for feature build
-        if: ${{ (github.event_name == 'push' && 'experiment/auth-polish-0.8.72' || inputs.ref) == 'feature/intro-and-community-playlists' || (github.event_name == 'push' && 'experiment/auth-polish-0.8.72' || inputs.ref) == 'experiment/all-features-0.8.49' || (github.event_name == 'push' && 'experiment/auth-polish-0.8.72' || inputs.ref) == 'experiment/auth-polish-0.8.72' }}
+        if: ${{ (github.event_name == 'push' && 'experiment/playlists-0.8.73' || inputs.ref) == 'feature/intro-and-community-playlists' || (github.event_name == 'push' && 'experiment/playlists-0.8.73' || inputs.ref) == 'experiment/all-features-0.8.49' || (github.event_name == 'push' && 'experiment/playlists-0.8.73' || inputs.ref) == 'experiment/playlists-0.8.73' }}
         run: |
           set -euo pipefail
           mkdir -p native/app/src/main/assets
@@ -170,7 +170,7 @@ jobs:
           retention-days: 14
 
       - name: Подписать и опубликовать native beta непосредственно в открытом GitHub
-        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
           NOTES: ${{ (github.event_name == 'push' && 'Авторизация без электронной почты, универсальные приглашения и отдельные аккаунты. Остальные способы входа включаются после проверки на сервере.' || inputs.notes) }}
@@ -199,7 +199,7 @@ jobs:
           echo "::notice title=Тестовая версия::$VERSION: прямое скачивание GitHub, Яндекс Диск не используется"
 
       - name: Владельцу в Telegram — тестовая версия готова
-        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
         continue-on-error: true
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
