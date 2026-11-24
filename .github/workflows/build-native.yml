@@ -47,9 +47,9 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ${{ (github.event_name == 'push' && '12ddc955ed55adc6469727dd4be47b613a98b23b' || inputs.ref) }}
+          ref: ${{ (github.event_name == 'push' && '9b5d28ce2e301d456fc0e497e991437fe10a8c0a' || inputs.ref) }}
           persist-credentials: false
-          # Validation source commit: 12ddc955ed55adc6469727dd4be47b613a98b23b
+          # Validation source commit: 9b5d28ce2e301d456fc0e497e991437fe10a8c0a
 
       - uses: actions/setup-node@v4
         if: github.event_name == 'push' || inputs.ref == 'experiment/auth-polish-0.8.72'
