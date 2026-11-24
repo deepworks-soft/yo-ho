@@ -1,9 +1,8 @@
 name: Сборка Yo-ho для ТВ (новая основа)
-run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.76' || inputs.version) }}
+run-name: Yo-ho Test 0.8.76
 
 # Новая ТВ-версия на родном Android (Kotlin + Compose, папка native/ в закрытом deep-cinema; план — docs/NATIVE.md).
 # Тестовая сборка 0.8.76 согласована владельцем; запуск по push только из этой ветки. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
-# (manifest-beta.json, видит лишь владелец с «Тестовыми версиями»); выбора «всем» здесь нет.
 #
 # Isolated staging APK, manual installation only. No production or beta update manifest.
 on:
@@ -14,7 +13,7 @@ permissions:
   contents: write   # выпуск GitHub — запасной путь на Диск, если прямая загрузка закрыта лимитом
 
 concurrency:
-  group: build
+  group: build-staging-tv
   cancel-in-progress: true
 
 jobs:
@@ -28,17 +27,15 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ${{ (github.event_name == 'push' && 'c4dbd6cf1129b10a4d0638335eefefd740b31eae' || inputs.ref) }}
+          ref: c4dbd6cf1129b10a4d0638335eefefd740b31eae
           persist-credentials: false
           # Validation source commit: c4dbd6cf1129b10a4d0638335eefefd740b31eae
 
       - uses: actions/setup-node@v4
-        if: github.event_name == 'push' || inputs.ref == 'experiment/staging-tv-0.8.76'
         with:
           node-version: '24'
 
       - name: Проверка аккаунтов, миграции и совместимости Worker
-        if: github.event_name == 'push' || inputs.ref == 'experiment/staging-tv-0.8.76'
         working-directory: tool/bridge
         run: |
           set -euo pipefail
@@ -51,7 +48,7 @@ jobs:
 
       - name: Номер версии
         env:
-          V: ${{ (github.event_name == 'push' && '0.8.76' || inputs.version) }}
+          V: '0.8.76'
         run: |
           echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
           echo "VERSION=$V" >> "$GITHUB_ENV"
@@ -96,7 +93,6 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > tool/assets/signing.keystore
 
       - name: Bundle verified intro for feature build
-        if: ${{ (github.event_name == 'push' && 'experiment/staging-tv-0.8.76' || inputs.ref) == 'feature/intro-and-community-playlists' || (github.event_name == 'push' && 'experiment/staging-tv-0.8.76' || inputs.ref) == 'experiment/all-features-0.8.49' || (github.event_name == 'push' && 'experiment/staging-tv-0.8.76' || inputs.ref) == 'experiment/staging-tv-0.8.76' }}
         run: |
           set -euo pipefail
           mkdir -p native/app/src/main/assets
@@ -155,12 +151,12 @@ jobs:
           gh release view "$tag" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -Fx "Yo-ho-Test-$VERSION.apk"
 
       - name: Владельцу в Telegram — тестовая версия готова
-        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
+        if: success()
         continue-on-error: true
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: ${{ (github.event_name == 'push' && 'Отдельное приложение Yo-ho Test: новый тестовый Worker, плейлисты, друзья и авторизация. Основная версия и её данные не изменяются.' || inputs.notes) }}
+          NOTES: 'Отдельное приложение Yo-ho Test. Новый тестовый Worker, плейлисты, друзья и авторизация.'
         run: |
           if [ -z "$TG" ] || [ -z "$CHAT" ]; then echo '::warning::Telegram не настроен'; exit 0; fi
           python3 - <<'PY' > tg.json
