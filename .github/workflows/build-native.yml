@@ -170,10 +170,10 @@ jobs:
           retention-days: 14
 
       - name: Подписать и опубликовать native beta непосредственно в открытом GitHub
-        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ (github.event_name == 'push' && 'Универсальные приглашения, один способ входа, подтверждение почты и восстановление пароля.' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Универсальные приглашения, один способ входа, изоляция аккаунтов. Подтверждение почты и восстановление пароля заработают после обновления сервера.' || inputs.notes) }}
         run: |
           set -euo pipefail
           pip install -q cryptography
@@ -199,18 +199,19 @@ jobs:
           echo "::notice title=Тестовая версия::$VERSION: прямое скачивание GitHub, Яндекс Диск не используется"
 
       - name: Владельцу в Telegram — тестовая версия готова
-        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         continue-on-error: true
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: ${{ (github.event_name == 'push' && 'Универсальные приглашения, один способ входа, подтверждение почты и восстановление пароля.' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Универсальные приглашения, один способ входа, изоляция аккаунтов. Подтверждение почты и восстановление пароля заработают после обновления сервера.' || inputs.notes) }}
         run: |
           if [ -z "$TG" ] || [ -z "$CHAT" ]; then echo '::warning::Telegram не настроен'; exit 0; fi
           python3 - <<'PY' > tg.json
           import json, os
           v = os.environ.get('VERSION', '')
           text = f"🧪 Тестовая Yo-ho {v} для ТВ на новой основе готова — придёт обновлением на ваш телевизор (если включены «Тестовые версии»).\n{os.environ.get('NOTES', '')}".strip()
+          text += f"\nAPK: https://github.com/deepworks-soft/yo-ho/releases/download/v{v}/Yo-ho-{v}.apk"
           print(json.dumps({"chat_id": os.environ['CHAT'], "text": text}, ensure_ascii=False))
           PY
           response=$(mktemp)
