@@ -1,0 +1,166 @@
+name: Yo-ho — owner screenshot endpoint (minimal production patch)
+on:
+  push:
+    branches: [automation/owner-screenshot-0.8.81]
+    paths: ['.github/workflows/owner-screenshot-deploy.yml']
+permissions:
+  contents: read
+concurrency:
+  group: yoho-cloudflare-production
+  cancel-in-progress: false
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: 9aab5303ca387b06ffc4f52e32f96777c6a77eb0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate exact source and mocked bot transport
+        working-directory: tool/bridge
+        run: |
+          set -euo pipefail
+          cp worker.js worker.mjs
+          node --check worker.mjs
+          for suite in identity external migration club social keys community chunks curated watch playlists; do
+            node "${suite}_test.mjs" > "$RUNNER_TEMP/owner-suite.log" 2>&1 || { echo "::error::Failed suite $suite"; exit 1; }
+            echo "OK $suite"
+          done
+      - name: Read live code, patch only owner screenshot route, preserve settings
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ -n "$CF_TOKEN" && "$CF_ACCOUNT" =~ ^[0-9a-fA-F]{32}$ ]] || { echo "::error::Missing Cloudflare credentials"; exit 1; }
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          target="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/deep-cinema"
+          origin="https://deep-cinema.deepworks-soft.workers.dev"
+          api() {
+            local out="$1"; shift
+            local http
+            http=$(curl --silent --show-error --max-time 45 --output "$out" --write-out '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "$@") || return 1
+            if [[ "$http" != 2* ]] || ! jq -e '.success == true' "$out" >/dev/null; then
+              echo "::error::Cloudflare HTTP $http"
+              return 1
+            fi
+          }
+          api "$tmp/settings.json" "$target/settings"
+          jq -e '.result.bindings | map(.name) | (index("DATA") != null and index("SOCIAL") != null and index("SESSION_SECRET") != null and index("TELEGRAM_TOKEN") != null and index("TELEGRAM_CHAT") != null)' "$tmp/settings.json" >/dev/null
+          curl -fsS --max-time 20 -H 'Accept: application/json' "$origin/status" -o "$tmp/status-before.json"
+          jq -e 'type=="object"' "$tmp/status-before.json" >/dev/null
+          curl -fsS --max-time 45 -H "Authorization: Bearer $CF_TOKEN" -D "$tmp/headers" "$target/content" -o "$tmp/raw"
+          python3 - "$tmp" <<'PY'
+          import sys, pathlib, re, email, email.policy, json
+          d=pathlib.Path(sys.argv[1])
+          h=(d/'headers').read_text(errors='replace')
+          types=re.findall(r'^content-type:\s*([^\r\n]+)',h,re.I|re.M)
+          ctype=types[-1].strip() if types else ''
+          raw=(d/'raw').read_bytes()
+          name='worker.js'
+          if ctype.lower().startswith('multipart/'):
+              msg=email.message_from_bytes(('Content-Type: '+ctype+'\r\nMIME-Version: 1.0\r\n\r\n').encode()+raw, policy=email.policy.default)
+              modules=[]
+              for part in msg.iter_parts():
+                  n=part.get_filename() or part.get_param('name',header='content-disposition')
+                  data=part.get_payload(decode=True)
+                  if n=='metadata':
+                      meta=json.loads(data)
+                      continue
+                  modules.append((n,data))
+              if len(modules)!=1:
+                  raise SystemExit('Refusing: live Worker is not a single module')
+              name,raw=modules[0]
+              if not name or not re.fullmatch(r'[A-Za-z0-9_.-]+\.m?js',name):
+                  raise SystemExit('Refusing: unknown module name')
+          elif not ('javascript' in ctype.lower() or 'text/plain' in ctype.lower()):
+              raise SystemExit('Refusing: unrecognized live Worker content type')
+          live=raw.decode('utf-8')
+          source=pathlib.Path('tool/bridge/worker.js').read_text()
+          start=source.index('async function ownerScreenshot(request, env) {')
+          end=source.index('\nasync function club(request, url, env) {',start)
+          handler=source[start:end].strip()
+          route="      if (url.pathname === '/owner/screenshot') return ownerScreenshot(request, env);"
+          anchor="      if (url.pathname.startsWith('/club/')"
+          club="async function club(request, url, env) {"
+          if route in live and handler in live:
+              (d/'already').touch()
+              print('Exact screenshot route already installed')
+          else:
+              if '/owner/screenshot' in live or 'function ownerScreenshot(' in live:
+                  raise SystemExit('Refusing: different screenshot implementation already exists')
+              if live.count(anchor)!=1 or live.count(club)!=1 or not all(x in live for x in ('async function verify(', 'async function rateOk(', 'export default', "env.DATA.get('club:admin')")):
+                  raise SystemExit('Refusing: live code does not have expected authorization and routing anchors')
+              patched=live.replace(anchor,route+'\n'+anchor,1).replace(club,handler+'\n\n'+club,1)
+              if patched.replace(route+'\n','',1).replace(handler+'\n\n','',1)!=live:
+                  raise SystemExit('Refusing: patch changed unrelated code')
+              (d/'old.mjs').write_bytes(raw)
+              (d/'new.mjs').write_bytes(patched.encode())
+              (d/'module').write_text(name)
+              print('Live Worker inspected; only one route and one handler added')
+          PY
+          if [[ ! -f "$tmp/already" ]]; then
+            node --check "$tmp/old.mjs" > /dev/null 2>&1
+            node --check "$tmp/new.mjs" > /dev/null 2>&1
+            module=$(cat "$tmp/module")
+            metadata=$(jq -nc --arg m "$module" '{main_module:$m}')
+            # Preserve all existing bindings and compatibility; never upload source checkout as a whole.
+            deploy() {
+              local file="$1"
+              api "$tmp/deploy.json" -X PUT "$target/content" \
+                -F "metadata=$metadata;type=application/json" \
+                -F "$module=@$file;filename=$module;type=application/javascript+module"
+            }
+            deploy "$tmp/new.mjs"
+            echo "Production code-only patch accepted"
+            if ! api "$tmp/after.json" "$target/settings"; then
+              deploy "$tmp/old.mjs"
+              echo "::error::Settings verification failed; original code restored"
+              exit 1
+            fi
+            for f in settings after; do
+              jq -S '.result | {bindings:(.bindings|sort_by(.name)),compatibility_date,compatibility_flags}' "$tmp/$f.json" > "$tmp/$f.config"
+            done
+            if ! cmp -s "$tmp/settings.config" "$tmp/after.config"; then
+              deploy "$tmp/old.mjs"
+              echo "::error::Settings changed; original code restored, inspect settings"
+              exit 1
+            fi
+            echo "Production bindings and compatibility unchanged"
+          fi
+          ok=0
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 15 -H 'Accept: application/json' "$origin/status" -o "$tmp/status-after.json" &&
+              jq -e 'type=="object"' "$tmp/status-after.json" >/dev/null; then
+              http=$(curl -sS --max-time 15 -o "$tmp/anonymous.json" -w '%{http_code}' -X POST -H 'Content-Type: image/png' --data-binary '' "$origin/owner/screenshot") || http=000
+              if [[ "$http" == 401 ]]; then ok=1; break; fi
+            fi
+            sleep 5
+          done
+          if [[ "$ok" != 1 ]]; then
+            if [[ -f "$tmp/old.mjs" ]]; then deploy "$tmp/old.mjs"; echo "Original code restored"; fi
+            echo "::error::Live health or owner authorization smoke failed"
+            exit 1
+          fi
+          echo "Live status OK; anonymous screenshot upload rejected (401)"
+      - name: Notify owner
+        if: always()
+        env:
+          TG: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT }}
+          RESULT: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          [[ -n "$TG" && -n "$CHAT" ]] || exit 0
+          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: маршрут скриншотов на основном сервере проверен"; else msg="❌ Yo-ho: маршрут скриншотов не прошёл проверку"; fi
+          jq -nc --arg chat "$CHAT" --arg msg "$msg" '{chat_id:$chat,text:$msg}' > "$RUNNER_TEMP/notify.json"
+          curl -fsS --max-time 20 -o /dev/null -H 'Content-Type: application/json' --data-binary @"$RUNNER_TEMP/notify.json" "https://api.telegram.org/bot$TG/sendMessage"
