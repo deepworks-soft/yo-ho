@@ -1,0 +1,31 @@
+name: Yo-ho — live test Worker smoke
+on:
+  push:
+    branches: [automation/worker-test]
+    paths: ['.github/workflows/worker-test-smoke.yml']
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Verify deployed endpoints without user credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=https://deep-cinema-test.deepworks-soft.workers.dev
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          curl -fsS --max-time 20 "$base/status" -o "$tmp/status"
+          jq -e '.app=="deep-cinema-bridge" and .kv==true and .secret==true and .social==true' "$tmp/status" >/dev/null
+          jq -c '{kv,secret,social,club,chunks,guard,metaKeys,songs,omdb,curated,bot,ai,watch}' "$tmp/status"
+          curl -fsS --max-time 20 "$base/identity/providers" -o "$tmp/providers"
+          jq -e '.providers | type=="array"' "$tmp/providers" >/dev/null
+          jq -c '{providers,linking,emailRegister,emailReset}' "$tmp/providers"
+          for endpoint in playlists/list playlists/get playlists/create playlists/share playlists/inbox playlists/move-item playlists/revoke; do
+            code=$(curl -sS --max-time 20 -X POST -H 'Content-Type: application/json' -d '{}' -o "$tmp/reply" -w '%{http_code}' "$base/$endpoint")
+            [[ "$code" == 401 ]] || { echo "::error::$endpoint expected 401, got $code"; exit 1; }
+            echo "OK $endpoint: unauthenticated request denied"
+          done
+          echo "Live smoke passed; no authenticated user data accessed"
