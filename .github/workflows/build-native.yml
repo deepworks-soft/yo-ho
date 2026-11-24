@@ -205,14 +205,23 @@ jobs:
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
           NOTES: ${{ (github.event_name == 'push' && 'Аккаунты Yo-ho — привязки способов входа, выбор никнейма и приглашения по провайдеру. Новые способы доступны после настройки сервера.' || inputs.notes) }}
         run: |
-          [ -z "$TG" ] || [ -z "$CHAT" ] && exit 0
+          if [ -z "$TG" ] || [ -z "$CHAT" ]; then echo '::warning::Telegram не настроен'; exit 0; fi
           python3 - <<'PY' > tg.json
           import json, os
           v = os.environ.get('VERSION', '')
           text = f"🧪 Тестовая Yo-ho {v} для ТВ на новой основе готова — придёт обновлением на ваш телевизор (если включены «Тестовые версии»).\n{os.environ.get('NOTES', '')}".strip()
           print(json.dumps({"chat_id": os.environ['CHAT'], "text": text}, ensure_ascii=False))
           PY
-          curl -s -o /dev/null -H 'content-type: application/json' --data @tg.json "https://api.telegram.org/bot$TG/sendMessage" || true
+          response=$(mktemp)
+          trap 'rm -f "$response" tg.json' EXIT
+          if ! curl -fsS --max-time 30 -o "$response" -H 'content-type: application/json' --data @tg.json "https://api.telegram.org/bot$TG/sendMessage" 2>/dev/null; then
+            echo "::warning::Уведомление Telegram не отправлено (HTTP или сеть)"
+            exit 1
+          fi
+          if ! jq -e '.ok == true' "$response" >/dev/null 2>&1; then
+            echo "::warning::Telegram не подтвердил отправку"
+            exit 1
+          fi
 
       - name: Убрать ключ подписи
         if: always()
