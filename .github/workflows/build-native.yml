@@ -1,8 +1,8 @@
 name: Сборка Yo-ho для ТВ (новая основа)
-run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.64' || inputs.version) }}
+run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.65' || inputs.version) }}
 
 # Новая ТВ-версия на родном Android (Kotlin + Compose, папка native/ в закрытом deep-cinema; план — docs/NATIVE.md).
-# Тестовая сборка 0.8.64 согласована владельцем; запуск по push только из этой ветки. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
+# Тестовая сборка 0.8.65 согласована владельцем; запуск по push только из этой ветки. Пока новая версия не умеет всё, что 0.7.7, — ТОЛЬКО тестовый канал
 # (manifest-beta.json, видит лишь владелец с «Тестовыми версиями»); выбора «всем» здесь нет.
 #
 # Что делает: берёт код из ветки (по умолчанию native), скачивает торрент-движок, собирает APK тем же ключом
@@ -13,7 +13,7 @@ run-name: Yo-ho TV test ${{ (github.event_name == 'push' && '0.8.64' || inputs.v
 # Номер сборки = 5000 + номер запуска: заведомо больше, чем у Flutter-версии (1100 + запуск).
 on:
   push:
-    branches: [build-request-0.8.64]
+    branches: [build-request-0.8.65]
   workflow_dispatch:
     inputs:
       version:
@@ -47,12 +47,12 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ${{ (github.event_name == 'push' && 'experiment/source-selection-0.8.64' || inputs.ref) }}
+          ref: ${{ (github.event_name == 'push' && 'experiment/member-ui-0.8.65' || inputs.ref) }}
           persist-credentials: false
 
       - name: Номер версии
         env:
-          V: ${{ (github.event_name == 'push' && '0.8.64' || inputs.version) }}
+          V: ${{ (github.event_name == 'push' && '0.8.65' || inputs.version) }}
         run: |
           echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error title=Версия::неверный номер версии"; exit 1; }
           echo "VERSION=$V" >> "$GITHUB_ENV"
@@ -97,7 +97,7 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > tool/assets/signing.keystore
 
       - name: Bundle verified intro for feature build
-        if: ${{ (github.event_name == 'push' && 'experiment/source-selection-0.8.64' || inputs.ref) == 'feature/intro-and-community-playlists' || (github.event_name == 'push' && 'experiment/source-selection-0.8.64' || inputs.ref) == 'experiment/all-features-0.8.49' || (github.event_name == 'push' && 'experiment/source-selection-0.8.64' || inputs.ref) == 'experiment/source-selection-0.8.64' }}
+        if: ${{ (github.event_name == 'push' && 'experiment/member-ui-0.8.65' || inputs.ref) == 'feature/intro-and-community-playlists' || (github.event_name == 'push' && 'experiment/member-ui-0.8.65' || inputs.ref) == 'experiment/all-features-0.8.49' || (github.event_name == 'push' && 'experiment/member-ui-0.8.65' || inputs.ref) == 'experiment/member-ui-0.8.65' }}
         run: |
           set -euo pipefail
           mkdir -p native/app/src/main/assets
@@ -155,7 +155,7 @@ jobs:
         if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ (github.event_name == 'push' && 'Интеллектуальный выбор активной раздачи и защита выбранного источника' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Пользовательский интерфейс, переключение качества и восстановление видео' || inputs.notes) }}
         run: |
           set -euo pipefail
           pip install -q cryptography
@@ -186,7 +186,7 @@ jobs:
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: ${{ (github.event_name == 'push' && 'Интеллектуальный выбор активной раздачи и защита выбранного источника' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Пользовательский интерфейс, переключение качества и восстановление видео' || inputs.notes) }}
         run: |
           [ -z "$TG" ] || [ -z "$CHAT" ] && exit 0
           python3 - <<'PY' > tg.json
