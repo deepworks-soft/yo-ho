@@ -170,10 +170,10 @@ jobs:
           retention-days: 14
 
       - name: Подписать и опубликовать native beta непосредственно в открытом GitHub
-        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ (github.event_name == 'push' && 'Авторизация без электронной почты, универсальные приглашения и отдельные аккаунты. Остальные способы входа включаются после проверки на сервере.' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Новый интерфейс плейлистов, настройки полок, иконки и выделение оценки. Обмен по коду и перестановка тайтлов требуют обновления Worker; до этого эти функции могут быть недоступны.' || inputs.notes) }}
         run: |
           set -euo pipefail
           pip install -q cryptography
@@ -199,12 +199,12 @@ jobs:
           echo "::notice title=Тестовая версия::$VERSION: прямое скачивание GitHub, Яндекс Диск не используется"
 
       - name: Владельцу в Telegram — тестовая версия готова
-        if: ${{ (github.event_name == 'push' && 'no' || inputs.disk) == 'yes' }}
+        if: ${{ (github.event_name == 'push' && 'yes' || inputs.disk) == 'yes' }}
         continue-on-error: true
         env:
           TG: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT }}
-          NOTES: ${{ (github.event_name == 'push' && 'Авторизация без электронной почты, универсальные приглашения и отдельные аккаунты. Остальные способы входа включаются после проверки на сервере.' || inputs.notes) }}
+          NOTES: ${{ (github.event_name == 'push' && 'Новый интерфейс плейлистов, настройки полок, иконки и выделение оценки. Обмен по коду и перестановка тайтлов требуют обновления Worker; до этого эти функции могут быть недоступны.' || inputs.notes) }}
         run: |
           if [ -z "$TG" ] || [ -z "$CHAT" ]; then echo '::warning::Telegram не настроен'; exit 0; fi
           python3 - <<'PY' > tg.json
