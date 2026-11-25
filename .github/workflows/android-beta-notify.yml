@@ -59,7 +59,7 @@ jobs:
           payload = {
               "chat_id": chat,
               "text": f"🧪 Тестовая Yo-ho {v} для ТВ готова. Обновление доступно при включённых «Тестовых версиях». Стабильный канал не изменён.",
-              "reply_markup": {"inline_keyboard": [[{"text": "Открыть тестовую версию", "url": f"https://github.com/deepworks-soft/yo-ho/releases/tag/v{v}"}]]}
+              "reply_markup": {"inline_keyboard": [[{"text": "Открыть тестовую версию", "url": f"https://github.com/deepworks-soft/yo-ho/releases/tag/v{v}"}], [{"text": "🚀 Выпустить для всех", "callback_data": f"promote:{v}"}]]}
           }
           req = urllib.request.Request("https://api.telegram.org/bot" + token + "/sendMessage", data=json.dumps(payload, ensure_ascii=False).encode(), headers={"Content-Type": "application/json"})
           try:
