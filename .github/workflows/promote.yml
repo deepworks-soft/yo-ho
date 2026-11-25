@@ -98,15 +98,26 @@ jobs:
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           APK="out/Yo-ho-$VERSION.apk"
           OLD="previous/Yo-ho-${STABLE#v}.apk"
-          cert() {
-            "$BT/apksigner" verify --print-certs "$1" | grep -E '^Signer #[0-9]+ certificate SHA-256 digest:' | sort
-          }
-          cert "$APK" > new.cert
-          cert "$OLD" > old.cert
-          test -s new.cert
-          cmp new.cert old.cert
-          "$BT/aapt2" dump badging "$APK" > new.badging
-          "$BT/aapt2" dump badging "$OLD" > old.badging
+          echo "Verifying candidate Android signature"
+          "$BT/apksigner" verify --verbose --print-certs "$APK" > new.sign 2>&1 || { cat new.sign; exit 1; }
+          echo "Verifying current stable Android signature"
+          "$BT/apksigner" verify --verbose --print-certs "$OLD" > old.sign 2>&1 || { cat old.sign; exit 1; }
+          python3 - <<'PY'
+          import re
+          def cert(path):
+              s=open(path).read()
+              found=re.findall(r"(?im)^\s*Signer #\d+ certificate SHA-256 digest:\s*([0-9a-f:]+)\s*$",s)
+              if not found:
+                  print(s)
+                  raise SystemExit("No Android signer certificate digest found")
+              return sorted(x.replace(":","").lower() for x in found)
+          assert cert("new.sign")==cert("old.sign"), "Android signing certificates differ"
+          print("Android signing certificates match")
+          PY
+          echo "Reading candidate Android package metadata"
+          "$BT/aapt2" dump badging "$APK" > new.badging || { head -n 2 new.badging; exit 1; }
+          echo "Reading current stable Android package metadata"
+          "$BT/aapt2" dump badging "$OLD" > old.badging || { head -n 2 old.badging; exit 1; }
           python3 - <<'PY'
           import os,re
           def package(path):
