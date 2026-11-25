@@ -1,13 +1,7 @@
-# Yo-ho — сборка
+# Yo-ho
 
-Здесь только сборка и проверки программы Yo-ho (GitHub Actions). Код — в закрытом репозитории,
-сборка берёт его по секрету `SRC_TOKEN` (только чтение). Выпуски и обновления — на Яндекс Диске
-Deepworks Soft; сайт — https://deepworks-soft.github.io.
+Приложение для Android TV и Google TV. Доступ по приглашению.
 
-| Запуск | Что делает |
-|---|---|
-| `build.yml` | сборка ТВ (APK) и ПК (установщик), с `disk=yes` — подпись и выкладка на Диск (тестовый канал) |
-| `promote.yml` | тестовая версия → всем |
-| `analyze.yml`, `unit-test.yml` | проверка кода и тесты моста |
-| `tv-check.yml`, `pc-check.yml` | стенды пульта и мыши, снимки — в ветки `tv-shots`, `pc-shots` |
-| `disk-check.yml`, `disk-current.yml`, `key-check.yml` | проверки Диска и ключа подписи |
+[Официальный сайт](https://deepworks-soft.github.io/) · [Стабильная версия](https://github.com/deepworks-soft/yo-ho/releases/latest)
+
+Этот репозиторий предназначен для распространения готовых обновлений.
