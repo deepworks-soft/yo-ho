@@ -17,13 +17,13 @@ jobs:
         with:
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 719e4299344ae054f37bfb3f5921d8245389ee4a
+          ref: 5e2a93033399eacf35dd233711816ed3e88db2e2
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 159bd80b118d82eb57235e0e0dfaeaf477c251ae
+          ref: 719e4299344ae054f37bfb3f5921d8245389ee4a
           path: editorial-base
           persist-credentials: false
       - uses: actions/setup-node@v4
