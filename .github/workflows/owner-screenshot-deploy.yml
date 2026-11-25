@@ -1,4 +1,4 @@
-name: Yo-ho — automatic playlist cover crop
+name: Yo-ho — editorial refresh and explicit playlist membership
 on:
   push:
     branches: [automation/editorial-worker-0.8.85]
@@ -17,13 +17,13 @@ jobs:
         with:
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: fbd589310e98c48a8e7425796fe9beee1bedd30a
+          ref: 949547c7d2199fda7a2cef4c78c33c49765b3fd6
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 586273368d6df5e5a70d82d6c0ad0f69b573e3f1
+          ref: fbd589310e98c48a8e7425796fe9beee1bedd30a
           path: editorial-base
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -236,6 +236,6 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$TG" && -n "$CHAT" ]] || exit 0
-          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: автоматическая обрезка обложек 3:4 на основном Worker обновлена, проверки пройдены"; else msg="❌ Yo-ho: обновление обрезки обложек не прошло проверку"; fi
+          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: главный баннер и разделение плейлистов обновлены, проверки пройдены"; else msg="❌ Yo-ho: обновление баннера и плейлистов не прошло проверку"; fi
           jq -nc --arg chat "$CHAT" --arg msg "$msg" '{chat_id:$chat,text:$msg}' > "$RUNNER_TEMP/notify.json"
           curl -fsS --max-time 20 -o /dev/null -H 'Content-Type: application/json' --data-binary @"$RUNNER_TEMP/notify.json" "https://api.telegram.org/bot$TG/sendMessage"
