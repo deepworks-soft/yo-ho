@@ -1,4 +1,4 @@
-name: Yo-ho — compact AudD recognition transport
+name: Yo-ho — AudD exact service diagnostics
 on:
   push:
     branches: [automation/editorial-worker-0.8.85]
@@ -17,13 +17,13 @@ jobs:
         with:
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ccc6fb9ef5a17b68b730d2410b880306e2d9399e
+          ref: 780b026580c316bfadfe31cf583bbe09ef222f26
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 5e2a93033399eacf35dd233711816ed3e88db2e2
+          ref: ccc6fb9ef5a17b68b730d2410b880306e2d9399e
           path: editorial-base
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -236,6 +236,6 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$TG" && -n "$CHAT" ]] || exit 0
-          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: обновлён транспорт распознавания музыки, проверки пройдены"; else msg="❌ Yo-ho: обновление распознавания музыки не прошло проверку"; fi
+          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: уточнены ошибки распознавания музыки, проверки пройдены"; else msg="❌ Yo-ho: обновление распознавания музыки не прошло проверку"; fi
           jq -nc --arg chat "$CHAT" --arg msg "$msg" '{chat_id:$chat,text:$msg}' > "$RUNNER_TEMP/notify.json"
           curl -fsS --max-time 20 -o /dev/null -H 'Content-Type: application/json' --data-binary @"$RUNNER_TEMP/notify.json" "https://api.telegram.org/bot$TG/sendMessage"
