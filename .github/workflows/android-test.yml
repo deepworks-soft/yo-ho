@@ -16,12 +16,15 @@ jobs:
     if: github.ref == 'refs/heads/signed-build'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    outputs:
+      version: ${{ steps.request.outputs.version }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
 
       - name: Validate request and load approved source
+        id: request
         env:
           SRC_REPO: ${{ secrets.SRC_REPO }}
           SRC_TOKEN: ${{ secrets.SRC_TOKEN }}
@@ -36,6 +39,7 @@ jobs:
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$SRC_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ && -n "$SRC_TOKEN" ]]
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           BUILD=$((100000 + GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))
           [[ "$BUILD" -lt 2100000000 && "$GITHUB_RUN_ATTEMPT" -lt 100 ]]
           echo "BUILD=$BUILD" >> "$GITHUB_ENV"
@@ -166,3 +170,13 @@ jobs:
         run: |
           rm -rf "$GITHUB_WORKSPACE/src" "$GITHUB_WORKSPACE/out"
           rm -f "$RUNNER_TEMP/yoho-signing.keystore" "$RUNNER_TEMP/source.log" "$RUNNER_TEMP/tests.log" "$RUNNER_TEMP/deps.log" "$RUNNER_TEMP/build.log" "$RUNNER_TEMP/badging.txt" "$RUNNER_TEMP/part.json" "$RUNNER_TEMP/notes.txt" "$RUNNER_TEMP/ts.json"
+
+  publish-beta:
+    needs: android
+    permissions:
+      actions: read
+      contents: write
+    uses: ./.github/workflows/android-beta-publish.yml
+    with:
+      run_id: ${{ format('{0}', github.run_id) }}
+      version: ${{ needs.android.outputs.version }}
