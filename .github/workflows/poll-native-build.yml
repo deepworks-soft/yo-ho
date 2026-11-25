@@ -25,6 +25,7 @@ jobs:
         shell: bash
         env:
           SRC_TOKEN: ${{ secrets.SRC_TOKEN }}
+          SRC_REPO: ${{ secrets.SRC_REPO }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
@@ -35,7 +36,7 @@ jobs:
           fi
           # Этот секрет уже используется существующей сборкой для чтения закрытого исходного кода.
           B64="$(GH_TOKEN="$SRC_TOKEN" gh api \
-            'repos/kozenkovnikitavladimirovich-max/deep-cinema/contents/native/build-request.json?ref=native' \
+            "repos/${SRC_REPO:?SRC_REPO is not configured}/contents/native/build-request.json?ref=native" \
             --jq '.content')"
           REQUEST="$(printf '%s' "$B64" | tr -d '\n' | base64 -d)"
           VERSION="$(printf '%s' "$REQUEST" | jq -er '.version | strings')"

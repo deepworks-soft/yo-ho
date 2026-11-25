@@ -18,7 +18,7 @@ jobs:
   start-test-build:
     if: >-
       github.event_name == 'issues' &&
-      github.event.issue.user.login == 'kozenkovnikitavladimirovich-max' &&
+      github.event.issue.user.id == 264280875 &&
       (startsWith(github.event.issue.title, '[native-build] ') || startsWith(github.event.issue.title, '[native-feature-build] '))
     runs-on: ubuntu-latest
     timeout-minutes: 5
