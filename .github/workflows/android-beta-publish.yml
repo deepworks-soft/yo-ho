@@ -8,6 +8,11 @@ on:
       version:
         required: true
         type: string
+    secrets:
+      TELEGRAM_TOKEN:
+        required: false
+      TELEGRAM_CHAT:
+        required: false
   push:
     branches: [signed-build]
     paths: [beta-publish-request.json]
@@ -25,6 +30,8 @@ jobs:
     if: github.ref == 'refs/heads/signed-build'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    outputs:
+      version: ${{ steps.request.outputs.version }}
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -35,6 +42,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate approved build and download its artifact
+        id: request
         shell: bash
         run: |
           set -euo pipefail
@@ -56,6 +64,7 @@ jobs:
           fi
           gh run download "$RUN_ID" --repo "$GH_REPO" --name "yoho-test-$VERSION" --dir out
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Independently verify signed APK and manifest
         shell: bash
         run: |
@@ -109,3 +118,14 @@ jobs:
           gh release view "$TAG" --repo "$GH_REPO" --json isDraft,isPrerelease | jq -e '(.isDraft|not) and .isPrerelease' >/dev/null
           [[ "$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name)" == "$STABLE" ]]
           echo "Published beta $TAG; stable remains $STABLE"
+
+  notify-owner:
+    needs: publish
+    permissions:
+      contents: read
+    uses: ./.github/workflows/android-beta-notify.yml
+    with:
+      version: ${{ needs.publish.outputs.version }}
+    secrets:
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
