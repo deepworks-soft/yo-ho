@@ -180,3 +180,7 @@ jobs:
     with:
       run_id: ${{ format('{0}', github.run_id) }}
       version: ${{ needs.android.outputs.version }}
+
+    secrets:
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
