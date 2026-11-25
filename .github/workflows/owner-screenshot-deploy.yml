@@ -23,7 +23,7 @@ jobs:
         with:
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 6e8ce3ef86ea5d3ade54aa5b1275c73964dc27c5
+          ref: ebba52590af38326708b73ab90107d9de4d68a0e
           path: editorial-base
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -122,24 +122,24 @@ jobs:
           live=(d/'prod.mjs').read_text()
           aa=old.splitlines(keepends=True); bb=new.splitlines(keepends=True)
           groups=list(difflib.SequenceMatcher(None,aa,bb,autojunk=False).get_grouped_opcodes(3))
-          out=live
-          if live==new:
-              print('Exact desired Worker already installed')
-          else:
-              for i,group in enumerate(groups):
-                  a=''.join(aa[group[0][1]:group[-1][2]])
-                  b=''.join(bb[group[0][3]:group[-1][4]])
-                  if not a or out.count(a)!=1:
-                      raise SystemExit('Refusing: live code lacks unique patch context #'+str(i+1))
-                  out=out.replace(a,b,1)
-              reverse=out
-              for group in reversed(groups):
-                  a=''.join(aa[group[0][1]:group[-1][2]])
-                  b=''.join(bb[group[0][3]:group[-1][4]])
-                  if not b or reverse.count(b)!=1: raise SystemExit('Cannot verify reversible patch')
-                  reverse=reverse.replace(b,a,1)
-              if reverse!=live: raise SystemExit('Unrelated changes detected')
-              print('Scoped editorial patch applied; unrelated live code preserved')
+          out=live; applied=[]
+          for i,group in enumerate(groups):
+              a=''.join(aa[group[0][1]:group[-1][2]])
+              b=''.join(bb[group[0][3]:group[-1][4]])
+              if a==b: continue
+              if b and out.count(b)==1:
+                  print('Already present patch block '+str(i+1))
+                  continue
+              if not a or out.count(a)!=1:
+                  raise SystemExit('Refusing: live code lacks unique prerequisite context #'+str(i+1))
+              out=out.replace(a,b,1)
+              applied.append((a,b))
+          reverse=out
+          for a,b in reversed(applied):
+              if not b or reverse.count(b)!=1: raise SystemExit('Cannot verify reversible patch')
+              reverse=reverse.replace(b,a,1)
+          if reverse!=live: raise SystemExit('Unrelated changes detected')
+          print('Scoped playlist prerequisites and editorial patch applied; unrelated live code preserved')
           (d/'candidate.mjs').write_text(out)
           print('Candidate SHA256: '+hashlib.sha256(out.encode()).hexdigest())
           PY
