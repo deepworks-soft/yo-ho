@@ -33,9 +33,9 @@ jobs:
           # Код — в закрытом репозитории; токен только на чтение, в .git не сохраняется.
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 81ad0b17d3aa9801f93650c400a1407abf6daec6
+          ref: c728393f41f529f683dc1f6f5c7e494152d69a36
           persist-credentials: false
-          # Validation source commit: 81ad0b17d3aa9801f93650c400a1407abf6daec6
+          # Validation source commit: c728393f41f529f683dc1f6f5c7e494152d69a36
 
       - uses: actions/setup-node@v4
         with:
