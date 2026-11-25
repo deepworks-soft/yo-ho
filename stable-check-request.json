@@ -1,4 +1,5 @@
 {
   "version": "0.8.94",
-  "purpose": "verification only; never publish on push"
+  "purpose": "verification only; never publish on push",
+  "attempt": 2
 }
