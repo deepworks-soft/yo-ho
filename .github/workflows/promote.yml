@@ -106,11 +106,13 @@ jobs:
           import re
           def cert(path):
               s=open(path).read()
-              found=re.findall(r"(?im)^\s*Signer #\d+ certificate SHA-256 digest:\s*([0-9a-f:]+)\s*$",s)
+              found=re.findall(r"(?im)^[ \t]*(?:Signer #\d+|V[123](?:\.\d+)? Signer(?: #\d+)?):?[ \t]+certificate SHA-256 digest:[ \t]*([0-9a-f:]+)[ \t]*$",s)
               if not found:
                   print(s)
                   raise SystemExit("No Android signer certificate digest found")
-              return sorted(x.replace(":","").lower() for x in found)
+              digests={x.replace(":","").lower() for x in found}
+              assert all(len(x)==64 for x in digests), "Invalid signer certificate digest"
+              return sorted(digests)
           assert cert("new.sign")==cert("old.sign"), "Android signing certificates differ"
           print("Android signing certificates match")
           PY
