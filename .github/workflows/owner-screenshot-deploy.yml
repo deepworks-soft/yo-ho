@@ -1,7 +1,7 @@
-name: Yo-ho — owner screenshot endpoint (minimal production patch)
+name: Yo-ho — editorial bot and playlist cover deployment
 on:
   push:
-    branches: [automation/owner-screenshot-0.8.81]
+    branches: [automation/editorial-worker-0.8.85]
     paths: ['.github/workflows/owner-screenshot-deploy.yml']
 permissions:
   contents: read
@@ -11,13 +11,20 @@ concurrency:
 jobs:
   patch:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           repository: kozenkovnikitavladimirovich-max/deep-cinema
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 9aab5303ca387b06ffc4f52e32f96777c6a77eb0
+          ref: 586273368d6df5e5a70d82d6c0ad0f69b573e3f1
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: 6e8ce3ef86ea5d3ade54aa5b1275c73964dc27c5
+          path: editorial-base
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -32,7 +39,7 @@ jobs:
             node "${suite}_test.mjs" > "$RUNNER_TEMP/owner-suite.log" 2>&1 || { echo "::error::Failed suite $suite"; exit 1; }
             echo "OK $suite"
           done
-      - name: Read live code, patch only owner screenshot route, preserve settings
+      - name: Inspect live code, stage exact patch, verify and deploy production
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -43,8 +50,9 @@ jobs:
           [[ -n "$CF_TOKEN" && "$CF_ACCOUNT" =~ ^[0-9a-fA-F]{32}$ ]] || { echo "::error::Missing Cloudflare credentials"; exit 1; }
           tmp=$(mktemp -d)
           trap 'rm -rf "$tmp"' EXIT
-          target="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/deep-cinema"
-          origin="https://deep-cinema.deepworks-soft.workers.dev"
+          base="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts"
+          prod="$base/deep-cinema"
+          test="$base/deep-cinema-test"
           api() {
             local out="$1"; shift
             local http
@@ -54,104 +62,149 @@ jobs:
               return 1
             fi
           }
-          api "$tmp/settings.json" "$target/settings"
-          jq -e '.result.bindings | map(.name) | (index("DATA") != null and index("SOCIAL") != null and index("SESSION_SECRET") != null and index("TELEGRAM_TOKEN") != null and index("TELEGRAM_CHAT") != null)' "$tmp/settings.json" >/dev/null
-          curl -fsS --max-time 20 -H 'Accept: application/json' "$origin/status" -o "$tmp/status-before.json"
-          jq -e 'type=="object"' "$tmp/status-before.json" >/dev/null
-          curl -fsS --max-time 45 -H "Authorization: Bearer $CF_TOKEN" -D "$tmp/headers" "$target/content/v2" -o "$tmp/raw"
-          python3 - "$tmp" <<'PY'
-          import sys, pathlib, re, email, email.policy, json
-          d=pathlib.Path(sys.argv[1])
-          h=(d/'headers').read_text(errors='replace')
+          getcode() {
+            local key="$1" target="$2"
+            curl -fsS --max-time 45 -H "Authorization: Bearer $CF_TOKEN" -D "$tmp/$key.headers" "$target/content/v2" -o "$tmp/$key.raw"
+            python3 - "$tmp" "$key" <<'PY'
+          import sys,pathlib,re,email,email.policy
+          d=pathlib.Path(sys.argv[1]); k=sys.argv[2]
+          h=(d/(k+'.headers')).read_text(errors='replace')
           types=re.findall(r'^content-type:\s*([^\r\n]+)',h,re.I|re.M)
           ctype=types[-1].strip() if types else ''
-          raw=(d/'raw').read_bytes()
-          name='worker.js'
+          raw=(d/(k+'.raw')).read_bytes(); name='worker.js'
           if ctype.lower().startswith('multipart/'):
-              msg=email.message_from_bytes(('Content-Type: '+ctype+'\r\nMIME-Version: 1.0\r\n\r\n').encode()+raw, policy=email.policy.default)
+              msg=email.message_from_bytes(('Content-Type: '+ctype+'\r\nMIME-Version: 1.0\r\n\r\n').encode()+raw,policy=email.policy.default)
               modules=[]
               for part in msg.iter_parts():
                   n=part.get_filename() or part.get_param('name',header='content-disposition')
-                  data=part.get_payload(decode=True)
-                  if n=='metadata':
-                      meta=json.loads(data)
-                      continue
-                  modules.append((n,data))
-              if len(modules)!=1:
-                  raise SystemExit('Refusing: live Worker is not a single module')
+                  if n!='metadata': modules.append((n,part.get_payload(decode=True)))
+              if len(modules)!=1: raise SystemExit('Refusing: not a single JS module')
               name,raw=modules[0]
-              if not name or not re.fullmatch(r'[A-Za-z0-9_.-]+\.m?js',name):
-                  raise SystemExit('Refusing: unknown module name')
+              if not name or not re.fullmatch(r'[A-Za-z0-9_.-]+\.m?js',name): raise SystemExit('Refusing: unknown module name')
           elif not ('javascript' in ctype.lower() or 'text/plain' in ctype.lower()):
-              raise SystemExit('Refusing: unrecognized live Worker content type')
-          live=raw.decode('utf-8')
-          source=pathlib.Path('tool/bridge/worker.js').read_text()
-          start=source.index('async function ownerScreenshot(request, env) {')
-          end=source.index('\nasync function club(request, url, env) {',start)
-          handler=source[start:end].strip()
-          route="      if (url.pathname === '/owner/screenshot') return ownerScreenshot(request, env);"
-          anchor="      if (url.pathname.startsWith('/club/')"
-          club="async function club(request, url, env) {"
-          if route in live and handler in live:
-              (d/'already').touch()
-              print('Exact screenshot route already installed')
-          else:
-              if '/owner/screenshot' in live or 'function ownerScreenshot(' in live:
-                  raise SystemExit('Refusing: different screenshot implementation already exists')
-              if live.count(anchor)!=1 or live.count(club)!=1 or not all(x in live for x in ('async function verify(', 'async function rateOk(', 'export default', "env.DATA.get('club:admin')")):
-                  raise SystemExit('Refusing: live code does not have expected authorization and routing anchors')
-              patched=live.replace(anchor,route+'\n'+anchor,1).replace(club,handler+'\n\n'+club,1)
-              if patched.replace(route+'\n','',1).replace(handler+'\n\n','',1)!=live:
-                  raise SystemExit('Refusing: patch changed unrelated code')
-              (d/'old.mjs').write_bytes(raw)
-              (d/'new.mjs').write_bytes(patched.encode())
-              (d/'module').write_text(name)
-              print('Live Worker inspected; only one route and one handler added')
+              raise SystemExit('Refusing: unknown content type')
+          raw.decode('utf-8')
+          (d/(k+'.mjs')).write_bytes(raw)
+          (d/(k+'.module')).write_text(name)
           PY
-          if [[ ! -f "$tmp/already" ]]; then
-            node --check "$tmp/old.mjs" > /dev/null 2>&1
-            node --check "$tmp/new.mjs" > /dev/null 2>&1
-            module=$(cat "$tmp/module")
-            metadata=$(jq -nc --arg m "$module" '{main_module:$m}')
-            # Preserve all existing bindings and compatibility; never upload source checkout as a whole.
-            deploy() {
-              local file="$1"
-              api "$tmp/deploy.json" -X PUT "$target/content" \
-                -F "metadata=$metadata;type=application/json" \
-                -F "$module=@$file;filename=$module;type=application/javascript+module"
-            }
-            deploy "$tmp/new.mjs"
-            echo "Production code-only patch accepted"
-            if ! api "$tmp/after.json" "$target/settings"; then
-              deploy "$tmp/old.mjs"
-              echo "::error::Settings verification failed; original code restored"
-              exit 1
-            fi
-            for f in settings after; do
-              jq -S '.result | {bindings:(.bindings|sort_by(.name)),compatibility_date,compatibility_flags}' "$tmp/$f.json" > "$tmp/$f.config"
-            done
-            if ! cmp -s "$tmp/settings.config" "$tmp/after.config"; then
-              deploy "$tmp/old.mjs"
-              echo "::error::Settings changed; original code restored, inspect settings"
-              exit 1
-            fi
-            echo "Production bindings and compatibility unchanged"
-          fi
-          ok=0
-          for i in 1 2 3 4 5 6; do
-            if curl -fsS --max-time 15 -H 'Accept: application/json' "$origin/status" -o "$tmp/status-after.json" &&
-              jq -e 'type=="object"' "$tmp/status-after.json" >/dev/null; then
-              http=$(curl -sS --max-time 15 -o "$tmp/anonymous.json" -w '%{http_code}' -X POST -H 'Content-Type: image/png' --data-binary '' "$origin/owner/screenshot") || http=000
-              if [[ "$http" == 401 ]]; then ok=1; break; fi
-            fi
-            sleep 5
+          }
+          api "$tmp/prod.settings" "$prod/settings"
+          api "$tmp/test.settings" "$test/settings"
+          python3 - "$tmp/prod.settings" "$tmp/test.settings" <<'PY'
+          import json,sys
+          def read(p):
+              b=json.load(open(p))['result']['bindings']
+              names={x['name'] for x in b}
+              stores={}
+              for x in b:
+                  if x.get('type') in ('kv_namespace','d1'):
+                      v=x.get('namespace_id') or x.get('id') or x.get('database_id')
+                      if not v: raise SystemExit('Cannot verify storage isolation')
+                      stores[x['name']]=(x['type'],v)
+              if not {'DATA','SOCIAL','SESSION_SECRET','TELEGRAM_TOKEN','TELEGRAM_CHAT'} <= names or not {'DATA','SOCIAL'} <= stores.keys(): raise SystemExit('Required bindings missing')
+              return stores
+          a,b=map(read,sys.argv[1:])
+          if set(a.values()) & set(b.values()): raise SystemExit('Refusing shared storage')
+          print('Required bindings and isolated test KV/D1 verified')
+          PY
+          getcode prod "$prod"
+          getcode test "$test"
+          api "$tmp/versions.json" "$prod/deployments"
+          jq -e '.result.deployments | length > 0' "$tmp/versions.json" >/dev/null
+          jq -r '.result.deployments[0] | "Prior production deployment: "+(.id // "unknown")' "$tmp/versions.json"
+          node --check "$tmp/prod.mjs" >/dev/null 2>&1
+          node --check "$tmp/test.mjs" >/dev/null 2>&1
+          python3 - "$tmp" <<'PY'
+          import pathlib,sys,difflib,hashlib
+          d=pathlib.Path(sys.argv[1])
+          old=pathlib.Path('editorial-base/tool/bridge/worker.js').read_text()
+          new=pathlib.Path('tool/bridge/worker.js').read_text()
+          live=(d/'prod.mjs').read_text()
+          aa=old.splitlines(keepends=True); bb=new.splitlines(keepends=True)
+          groups=list(difflib.SequenceMatcher(None,aa,bb,autojunk=False).get_grouped_opcodes(3))
+          out=live
+          if live==new:
+              print('Exact desired Worker already installed')
+          else:
+              for i,group in enumerate(groups):
+                  a=''.join(aa[group[0][1]:group[-1][2]])
+                  b=''.join(bb[group[0][3]:group[-1][4]])
+                  if not a or out.count(a)!=1:
+                      raise SystemExit('Refusing: live code lacks unique patch context #'+str(i+1))
+                  out=out.replace(a,b,1)
+              reverse=out
+              for group in reversed(groups):
+                  a=''.join(aa[group[0][1]:group[-1][2]])
+                  b=''.join(bb[group[0][3]:group[-1][4]])
+                  if not b or reverse.count(b)!=1: raise SystemExit('Cannot verify reversible patch')
+                  reverse=reverse.replace(b,a,1)
+              if reverse!=live: raise SystemExit('Unrelated changes detected')
+              print('Scoped editorial patch applied; unrelated live code preserved')
+          (d/'candidate.mjs').write_text(out)
+          print('Candidate SHA256: '+hashlib.sha256(out.encode()).hexdigest())
+          PY
+          node --check "$tmp/candidate.mjs" >/dev/null 2>&1
+          cp "$tmp/candidate.mjs" tool/bridge/worker.mjs
+          for suite in identity external migration club social keys community chunks curated watch playlists; do
+            (cd tool/bridge && node "$suite"_test.mjs) > "$tmp/suite.log" 2>&1 || { echo "::error::Patched live code failed suite $suite"; exit 1; }
+            echo "Patched live OK $suite"
           done
-          if [[ "$ok" != 1 ]]; then
-            if [[ -f "$tmp/old.mjs" ]]; then deploy "$tmp/old.mjs"; echo "Original code restored"; fi
-            echo "::error::Live health or owner authorization smoke failed"
+          deploy() {
+            local target="$1" module="$2" file="$3"
+            local metadata
+            metadata=$(jq -nc --arg m "$module" '{main_module:$m}')
+            api "$tmp/deploy.json" -X PUT "$target/content" \
+              -F "metadata=$metadata;type=application/json" \
+              -F "$module=@$file;filename=$module;type=application/javascript+module"
+          }
+          settings_equal() {
+            local key="$1" target="$2"
+            api "$tmp/$key.after" "$target/settings" || return 1
+            for f in "$key.settings" "$key.after"; do
+              jq -S '.result | {bindings:(.bindings|sort_by(.name)),compatibility_date,compatibility_flags}' "$tmp/$f" > "$tmp/$f.config"
+            done
+            cmp -s "$tmp/$key.settings.config" "$tmp/$key.after.config"
+          }
+          smoke() {
+            local origin="$1" code
+            for i in 1 2 3 4 5 6; do
+              if curl -fsS --max-time 15 "$origin/status" -o "$tmp/status.json" && jq -e '.app=="deep-cinema-bridge"' "$tmp/status.json" >/dev/null; then
+                code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/img/pl-00000000-0000-0000-0000-000000000000-00000000000000000000000000000000.jpg") || code=000
+                if [[ "$code" == 401 ]]; then
+                  code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/club/curated") || code=000
+                  if [[ "$code" == 401 ]]; then
+                    code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$origin/playlists/list") || code=000
+                    [[ "$code" == 401 ]] && return 0
+                  fi
+                fi
+              fi
+              sleep 5
+            done
+            return 1
+          }
+          tmod=$(cat "$tmp/test.module")
+          pmod=$(cat "$tmp/prod.module")
+          deploy "$test" "$tmod" "$tmp/candidate.mjs"
+          if ! settings_equal test "$test" || ! smoke 'https://deep-cinema-test.deepworks-soft.workers.dev'; then
+            deploy "$test" "$tmod" "$tmp/test.mjs"
+            echo "::error::Test verification failed, original test code restored"
             exit 1
           fi
-          echo "Live status OK; anonymous screenshot upload rejected (401)"
+          echo "Test Worker passed health, cover, curated and playlist anonymous rejection; bindings unchanged"
+          getcode current "$prod"
+          cmp -s "$tmp/current.mjs" "$tmp/prod.mjs" || { echo "::error::Production changed concurrently"; exit 1; }
+          settings_equal prod "$prod" || { echo "::error::Production settings changed concurrently"; exit 1; }
+          if ! cmp -s "$tmp/prod.mjs" "$tmp/candidate.mjs"; then
+            deploy "$prod" "$pmod" "$tmp/candidate.mjs"
+            if ! settings_equal prod "$prod" || ! smoke 'https://deep-cinema.deepworks-soft.workers.dev'; then
+              deploy "$prod" "$pmod" "$tmp/prod.mjs"
+              echo "::error::Production verification failed, original code restored"
+              exit 1
+            fi
+          else
+            smoke 'https://deep-cinema.deepworks-soft.workers.dev'
+          fi
+          echo "Production editorial patch verified; bindings unchanged; webhook not modified"
       - name: Notify owner
         if: always()
         env:
@@ -161,6 +214,6 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$TG" && -n "$CHAT" ]] || exit 0
-          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: маршрут скриншотов на основном сервере проверен"; else msg="❌ Yo-ho: маршрут скриншотов не прошёл проверку"; fi
+          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: главный баннер и обложки плейлистов на основном Worker обновлены, проверки пройдены"; else msg="❌ Yo-ho: развёртывание редакционных функций не прошло проверку"; fi
           jq -nc --arg chat "$CHAT" --arg msg "$msg" '{chat_id:$chat,text:$msg}' > "$RUNNER_TEMP/notify.json"
           curl -fsS --max-time 20 -o /dev/null -H 'Content-Type: application/json' --data-binary @"$RUNNER_TEMP/notify.json" "https://api.telegram.org/bot$TG/sendMessage"
