@@ -1,0 +1,75 @@
+name: Android TV beta Telegram notification
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+    secrets:
+      TELEGRAM_TOKEN:
+        required: false
+      TELEGRAM_CHAT:
+        required: false
+  push:
+    branches: [signed-build]
+    paths: [beta-notify-request.json]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    if: github.ref == 'refs/heads/signed-build'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Confirm published test release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CALL_VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$CALL_VERSION"
+          if [[ -z "$VERSION" ]]; then
+            VERSION=$(jq -er '.version | strings' beta-notify-request.json)
+          fi
+          [[ "$VERSION" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]
+          gh api "repos/$GH_REPO/releases/tags/v$VERSION" > release.json
+          jq -e --arg apk "Yo-ho-$VERSION.apk" '(.draft|not) and .prerelease and ([.assets[]|select(.state=="uploaded")|.name]|sort)==([$apk,"manifest-beta.json"]|sort)' release.json >/dev/null
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - name: Notify owner in Telegram
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+          token = os.environ.get("TELEGRAM_TOKEN", "").strip()
+          chat = os.environ.get("TELEGRAM_CHAT", "").strip()
+          if not token or not chat:
+              raise SystemExit("Telegram secrets are missing in the build repository")
+          v = os.environ["VERSION"]
+          payload = {
+              "chat_id": chat,
+              "text": f"🧪 Тестовая Yo-ho {v} для ТВ готова. Обновление доступно при включённых «Тестовых версиях». Стабильный канал не изменён.",
+              "reply_markup": {"inline_keyboard": [[{"text": "Открыть тестовую версию", "url": f"https://github.com/deepworks-soft/yo-ho/releases/tag/v{v}"}]]}
+          }
+          req = urllib.request.Request("https://api.telegram.org/bot" + token + "/sendMessage", data=json.dumps(payload, ensure_ascii=False).encode(), headers={"Content-Type": "application/json"})
+          try:
+              with urllib.request.urlopen(req, timeout=25) as r:
+                  response = json.load(r)
+          except urllib.error.HTTPError as e:
+              raise SystemExit(f"Telegram rejected notification (HTTP {e.code})") from None
+          except Exception:
+              raise SystemExit("Telegram request failed") from None
+          if response.get("ok") is not True:
+              raise SystemExit("Telegram did not confirm delivery")
+          print("Telegram accepted owner notification")
+          PY
