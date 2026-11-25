@@ -1,0 +1,167 @@
+name: Android TV signed test
+on:
+  push:
+    branches: [signed-build]
+    paths: [build-request.json]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-tv-test
+  cancel-in-progress: false
+
+jobs:
+  android:
+    if: github.ref == 'refs/heads/signed-build'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Validate request and load approved source
+        env:
+          SRC_REPO: ${{ secrets.SRC_REPO }}
+          SRC_TOKEN: ${{ secrets.SRC_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(jq -er '.version | strings' build-request.json)
+          SOURCE_SHA=$(jq -er '.source_sha | strings' build-request.json)
+          [[ "$VERSION" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]
+          python3 -c 'import os; assert tuple(map(int,os.environ["VERSION"].split("."))) > (0,8,93)'
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$SRC_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ && -n "$SRC_TOKEN" ]]
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          BUILD=$((100000 + GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))
+          [[ "$BUILD" -lt 2100000000 && "$GITHUB_RUN_ATTEMPT" -lt 100 ]]
+          echo "BUILD=$BUILD" >> "$GITHUB_ENV"
+          exec 3>&1
+          exec >"$RUNNER_TEMP/source.log" 2>&1
+          trap 'rc=$?; if [ "$rc" -ne 0 ]; then echo "::error::Source checkout failed; details withheld from public logs" >&3; fi' EXIT
+          git init -q src
+          auth=$(printf 'x-access-token:%s' "$SRC_TOKEN" | base64 -w0)
+          git -C src -c "http.extraHeader=AUTHORIZATION: basic $auth" fetch --quiet --depth=1 "https://github.com/$SRC_REPO.git" "$SOURCE_SHA"
+          unset auth
+          git -C src checkout --quiet --detach FETCH_HEAD
+          [[ "$(git -C src rev-parse HEAD)" == "$SOURCE_SHA" ]]
+          echo "Source ready" >&3
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+
+      - name: Compatibility tests
+        working-directory: src/tool/bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          exec 3>&1
+          exec >"$RUNNER_TEMP/tests.log" 2>&1
+          trap 'rc=$?; if [ "$rc" -ne 0 ]; then echo "::error::Compatibility tests failed; details withheld from public logs" >&3; fi' EXIT
+          cp worker.js worker.mjs
+          node --check worker.mjs
+          node native_genres_check.mjs
+          for suite in identity external migration club social keys community chunks curated watch playlists; do
+            node "${suite}_test.mjs"
+          done
+          echo "Compatibility tests passed" >&3
+
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+        with:
+          gradle-version: '8.14.3'
+          cache-disabled: true
+          dependency-graph: disabled
+          add-job-summary: never
+          build-scan-publish: false
+
+      - name: Prepare build dependencies
+        working-directory: src
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          exec 3>&1
+          exec >"$RUNNER_TEMP/deps.log" 2>&1
+          trap 'rc=$?; if [ "$rc" -ne 0 ]; then echo "::error::Dependency preparation failed" >&3; fi' EXIT
+          gh api repos/YouROK/TorrServer/releases/tags/MatriX.150 > "$RUNNER_TEMP/ts.json"
+          pick() { jq -r --arg re "$1" '[.assets[] | select(.name|test($re;"i"))][0].browser_download_url // empty' "$RUNNER_TEMP/ts.json"; }
+          A64=$(pick 'android.*arm64')
+          A7=$(pick 'android.*arm(v)?7')
+          [[ "$A64" == https://github.com/YouROK/TorrServer/releases/download/* && "$A7" == https://github.com/YouROK/TorrServer/releases/download/* ]]
+          J=native/app/src/main/jniLibs
+          mkdir -p "$J/arm64-v8a" "$J/armeabi-v7a"
+          curl -fsSL --retry 3 "$A64" -o "$J/arm64-v8a/libtorrserver.so"
+          curl -fsSL --retry 3 "$A7" -o "$J/armeabi-v7a/libtorrserver.so"
+          test -s "$J/arm64-v8a/libtorrserver.so"
+          test -s "$J/armeabi-v7a/libtorrserver.so"
+          python3 tool/build_tracker_catalog.py
+          mkdir -p native/app/src/main/assets
+          curl -fsSL --retry 3 https://github.com/deepworks-soft/yo-ho/releases/download/intro-assets-v1/yoho-intro-v2.mp4 -o native/app/src/main/assets/yoho-intro-v2.mp4
+          echo '6c6a2ea7d2f3c46bfd880601489b8bd40e7da5c7c254bb3cce02313afded4b02  native/app/src/main/assets/yoho-intro-v2.mp4' | sha256sum -c -
+          echo "Dependencies ready" >&3
+
+      - name: Build, sign and verify test package
+        working-directory: src
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          exec 3>&1
+          exec >"$RUNNER_TEMP/build.log" 2>&1
+          KS="$RUNNER_TEMP/yoho-signing.keystore"
+          trap 'rc=$?; rm -f "$KS"; if [ "$rc" -ne 0 ]; then echo "::error::Build or signing verification failed; details withheld from public logs" >&3; fi' EXIT
+          [[ -n "$KEYSTORE_B64" ]]
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$KS"
+          unset KEYSTORE_B64
+          test -s "$KS"
+          gradle -p native --no-daemon --no-build-cache --no-scan testReleaseUnitTest assembleRelease "-PyohoVersion=$VERSION" "-PyohoBuild=$BUILD" "-PyohoKeystore=$KS"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          O="$GITHUB_WORKSPACE/out"
+          APK="Yo-ho-$VERSION.apk"
+          cp native/app/build/outputs/apk/release/app-universal-release.apk "$O/$APK"
+          python3 tool/check_apk_sign.py "$O/$APK" "$KS"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose "$O/$APK"
+          "$BT/aapt2" dump badging "$O/$APK" > "$RUNNER_TEMP/badging.txt"
+          grep -F "package: name='app.deepcinema.deep_cinema' versionCode='$BUILD' versionName='$VERSION'" "$RUNNER_TEMP/badging.txt"
+          python3 -m pip install --quiet cryptography
+          SIGN="$PWD/tool/update_sign.py"
+          WANT=$(grep -o 'updatePublicKey = "[^"]*"' native/app/src/main/kotlin/app/deepcinema/deep_cinema/core/Keys.kt | cut -d'"' -f2)
+          test -n "$WANT"
+          cd "$O"
+          python3 "$SIGN" sign-files "$KS" "$VERSION" "$RUNNER_TEMP/part.json" "$APK"
+          jq -r '.notes // "Test build"' "$GITHUB_WORKSPACE/build-request.json" > "$RUNNER_TEMP/notes.txt"
+          python3 "$SIGN" merge "$KS" "$VERSION" "$RUNNER_TEMP/notes.txt" manifest-beta.json -- "$RUNNER_TEMP/part.json"
+          python3 -c 'import json,os; m=json.load(open("manifest-beta.json")); assert m["version"]==os.environ["VERSION"]'
+          GOT=$(python3 -c 'import json;print(json.load(open("manifest-beta.json"))["key"])')
+          [[ "$GOT" == "$WANT" ]]
+          python3 "$SIGN" verify "$WANT" manifest-beta.json .
+          echo "Test APK and update manifest verified; Android versionCode $BUILD" >&3
+
+      - name: Upload test files only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: yoho-test-${{ env.VERSION }}
+          path: |
+            out/Yo-ho-${{ env.VERSION }}.apk
+            out/manifest-beta.json
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Clean sensitive workspace
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/src" "$GITHUB_WORKSPACE/out"
+          rm -f "$RUNNER_TEMP/yoho-signing.keystore" "$RUNNER_TEMP/source.log" "$RUNNER_TEMP/tests.log" "$RUNNER_TEMP/deps.log" "$RUNNER_TEMP/build.log" "$RUNNER_TEMP/badging.txt" "$RUNNER_TEMP/part.json" "$RUNNER_TEMP/notes.txt" "$RUNNER_TEMP/ts.json"
