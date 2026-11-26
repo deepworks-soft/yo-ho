@@ -131,14 +131,26 @@ jobs:
           unset KEYSTORE_B64
           test -s "$KS"
           echo "Android compilation and unit tests started" >&3
-          if ! gradle -p native --no-daemon --no-build-cache --no-scan testReleaseUnitTest assembleRelease "-PyohoVersion=$VERSION" "-PyohoBuild=$BUILD" "-PyohoKeystore=$KS"; then
+          build_android() {
+            gradle -p native --no-daemon --no-build-cache --no-scan testReleaseUnitTest assembleRelease "-PyohoVersion=$VERSION" "-PyohoBuild=$BUILD" "-PyohoKeystore=$KS"
+          }
+          rc=0
+          build_android || rc=$?
+          if [[ "$rc" -ne 0 ]] && grep -Eiq 'Could not (resolve|download|GET|HEAD)|Connection timed out|Read timed out|Temporary failure in name resolution|Could not transfer artifact' "$RUNNER_TEMP/build.log"; then
+            echo "Gradle dependency/network failure; retrying once" >&3
+            sleep 15
+            : > "$RUNNER_TEMP/build.log"
+            rc=0
+            build_android || rc=$?
+          fi
+          if [[ "$rc" -ne 0 ]]; then
             python3 - "$RUNNER_TEMP/build.log" >&3 <<'PY'
           import re,sys
           from pathlib import Path
           log=Path(sys.argv[1]).read_text(errors='replace')
           # Output only fixed categories and numeric locations in the three changed files.
           # Never print a compiler message, source excerpt, arbitrary path or environment value.
-          names={'WatchPartyUi.kt':'A','WatchParty.kt':'B','Player.kt':'C'}
+          names={'WatchPartyUi.kt':'A','WatchParty.kt':'B','Player.kt':'C','LiveTvScreen.kt':'TV-UI','LiveTvOrder.kt':'TV-ORDER','LiveTvTest.kt':'TV-TEST','LiveTv.kt':'TV-DATA','LiveTvExtras.kt':'TV-EXTRAS','PersonalTvSources.kt':'TV-SOURCES'}
           types=[('Unresolved reference','unresolved-reference'),('Argument type mismatch','argument-type'),('Type mismatch','type-mismatch'),('None of the following','overload-resolution'),('Cannot infer','type-inference'),('No value passed','missing-argument'),('No parameter with name','unknown-parameter'),('Overload resolution ambiguity','ambiguous-overload'),('Expecting','syntax'),('must be initialized','initialization'),('Composable invocations','composable-context'),('is invisible','visibility'),('operator','operator'),('Too many arguments','too-many-arguments')]
           found=0
           for line in log.splitlines():
@@ -152,6 +164,10 @@ jobs:
               found+=1
               if found>=20: break
           if not found:
+              for phrase,label in [('Could not resolve','resolution'),('Could not download','download'),('Could not GET','http-get'),('Could not HEAD','http-head'),('Read timed out','read-timeout'),('Connection timed out','connect-timeout'),('UnknownHostException','dns'),('PKIX path building failed','tls'),('No matching variant','variant'),('Plugin [id:','plugin')]:
+                  if phrase.lower() in log.lower(): print('Gradle dependency diagnostic: '+label)
+              for test in ['matchActualPublicCatalogEnglishNamesWithoutCollapsingDistinctChannels','exactOwnerLineupAndPersonalVariants','classicRussianOrderIgnoresProviderOrderAndKeepsRadioLast']:
+                  if re.search(r'LiveTvTest\s*>\s*'+re.escape(test)+r'\s+FAILED',log): print('TV unit test failed: '+test)
               for phrase,label in [('compileReleaseKotlin','kotlin'),('testReleaseUnitTest','unit-tests'),('validateSigningRelease','signing'),('processReleaseResources','resources'),('OutOfMemoryError','memory'),('Could not resolve','dependency'),('daemon disappeared','daemon')]:
                   if phrase in log: print('Gradle diagnostic: '+label)
           PY
