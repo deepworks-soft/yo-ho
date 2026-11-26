@@ -130,7 +130,34 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 -d > "$KS"
           unset KEYSTORE_B64
           test -s "$KS"
-          gradle -p native --no-daemon --no-build-cache --no-scan testReleaseUnitTest assembleRelease "-PyohoVersion=$VERSION" "-PyohoBuild=$BUILD" "-PyohoKeystore=$KS"
+          echo "Android compilation and unit tests started" >&3
+          if ! gradle -p native --no-daemon --no-build-cache --no-scan testReleaseUnitTest assembleRelease "-PyohoVersion=$VERSION" "-PyohoBuild=$BUILD" "-PyohoKeystore=$KS"; then
+            python3 - "$RUNNER_TEMP/build.log" >&3 <<'PY'
+          import re,sys
+          from pathlib import Path
+          log=Path(sys.argv[1]).read_text(errors='replace')
+          # Output only fixed categories and numeric locations in the three changed files.
+          # Never print a compiler message, source excerpt, arbitrary path or environment value.
+          names={'WatchPartyUi.kt':'A','WatchParty.kt':'B','Player.kt':'C'}
+          types=[('Unresolved reference','unresolved-reference'),('Argument type mismatch','argument-type'),('Type mismatch','type-mismatch'),('None of the following','overload-resolution'),('Cannot infer','type-inference'),('No value passed','missing-argument'),('No parameter with name','unknown-parameter'),('Overload resolution ambiguity','ambiguous-overload'),('Expecting','syntax'),('must be initialized','initialization'),('Composable invocations','composable-context'),('is invisible','visibility'),('operator','operator'),('Too many arguments','too-many-arguments')]
+          found=0
+          for line in log.splitlines():
+              m=re.search(r'\be:\s+[^\r\n]*?([A-Za-z0-9_]+\.kt):(\d+):(\d+)\s+(.*)',line)
+              if not m: continue
+              name,ln,col,msg=m.groups()
+              code=next((label for phrase,label in types if phrase.lower() in msg.lower()),'other-kotlin')
+              if name in names and int(ln)<100000 and int(col)<10000:
+                  print('Kotlin diagnostic: file '+names[name]+' line '+str(int(ln))+' column '+str(int(col))+' category '+code)
+              else: print('Kotlin diagnostic: other file category '+code)
+              found+=1
+              if found>=20: break
+          if not found:
+              for phrase,label in [('compileReleaseKotlin','kotlin'),('testReleaseUnitTest','unit-tests'),('validateSigningRelease','signing'),('processReleaseResources','resources'),('OutOfMemoryError','memory'),('Could not resolve','dependency'),('daemon disappeared','daemon')]:
+                  if phrase in log: print('Gradle diagnostic: '+label)
+          PY
+            exit 1
+          fi
+          echo "Android compilation and unit tests passed; verifying signing" >&3
           mkdir -p "$GITHUB_WORKSPACE/out"
           O="$GITHUB_WORKSPACE/out"
           APK="Yo-ho-$VERSION.apk"
