@@ -1,4 +1,4 @@
-name: Yo-ho — AudD exact service diagnostics
+name: Yo-ho — Editorial genres and playlist branding production
 on:
   push:
     branches: [automation/editorial-worker-0.8.85]
@@ -11,25 +11,32 @@ concurrency:
 jobs:
   patch:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          repository: ${{ secrets.SRC_REPO }}
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 780b026580c316bfadfe31cf583bbe09ef222f26
+          ref: 405e97bb00be7678a621c74951392b684f4870ca
           persist-credentials: false
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          repository: ${{ secrets.SRC_REPO }}
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ccc6fb9ef5a17b68b730d2410b880306e2d9399e
+          ref: 6b7abdbfca3ec4abec03aaa4e93cabcc274b3448
           path: editorial-base
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: ${{ secrets.SRC_REPO }}
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: 2a79e288516f8e0c8fb6395c89eda4586dcefe1f
+          path: live-party-base
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
-      - name: Validate exact source and mocked bot transport
+      - name: Validate exact source and full compatibility regression
         working-directory: tool/bridge
         run: |
           set -euo pipefail
@@ -115,58 +122,51 @@ jobs:
           node --check "$tmp/prod.mjs" >/dev/null 2>&1
           node --check "$tmp/test.mjs" >/dev/null 2>&1
           python3 - "$tmp" <<'PY'
-          import pathlib,sys,difflib,hashlib
+          import pathlib,sys,hashlib,difflib
           d=pathlib.Path(sys.argv[1])
           old=pathlib.Path('editorial-base/tool/bridge/worker.js').read_text()
           new=pathlib.Path('tool/bridge/worker.js').read_text()
+          legacy=pathlib.Path('live-party-base/tool/bridge/worker.js').read_text()
           live=(d/'prod.mjs').read_text()
-          aa=old.splitlines(keepends=True); bb=new.splitlines(keepends=True)
+          marker='// Watch Party: pure room state machine; server clock, no media URLs.'
+          if any(x.count(marker)!=1 for x in (old,new,legacy,live)):
+              raise SystemExit('Refusing: cannot identify Watch Party scope')
+          def suffix(x): return x[x.index(marker):].rstrip()
+          if suffix(old)!=suffix(new):
+              raise SystemExit('Refusing: source changes Watch Party')
+          if suffix(live)==suffix(legacy): party_tests='legacy'
+          elif suffix(live)==suffix(new): party_tests='current'
+          else: raise SystemExit('Refusing: unrecognized live Watch Party version')
+          (d/'party-tests').write_text(party_tests)
+          aa=old.splitlines(keepends=True);bb=new.splitlines(keepends=True)
           groups=list(difflib.SequenceMatcher(None,aa,bb,autojunk=False).get_grouped_opcodes(3))
           out=live; applied=[]
-          marker='let playlistSchemaReady = null;'
-          playlist_start=next(i for i,l in enumerate(aa) if l.strip()==marker)
-          def locate(text,needle,scope):
-              start=text.index(marker) if scope else 0
-              sub=text[start:]
-              if needle and sub.count(needle)==1: return start+sub.index(needle),needle
-              if scope and needle and sub.rstrip().endswith(needle.rstrip()):
-                  n=needle.rstrip()
-                  end=len(text.rstrip())
-                  return end-len(n),n
-              return -1,needle
-          for i,group in enumerate(groups):
-              a=''.join(aa[group[0][1]:group[-1][2]])
-              b=''.join(bb[group[0][3]:group[-1][4]])
+          for i,g in enumerate(groups):
+              a=''.join(aa[g[0][1]:g[-1][2]])
+              b=''.join(bb[g[0][3]:g[-1][4]])
               if a==b: continue
-              if 'async function ownerScreenshot(request, env)' in b and 'async function ownerScreenshot(request, env)' not in a:
-                  if live.count('async function ownerScreenshot(request, env)')!=1 or live.count("if (url.pathname === '/owner/screenshot') return ownerScreenshot(request, env);")!=1:
-                      raise SystemExit('Existing screenshot handler cannot be confirmed')
-                  print('Preserving pre-existing owner screenshot handler')
+              if not a or not b: raise SystemExit('Refusing unanchored patch')
+              if out.count(b)==1:
+                  print('Already present block '+str(i+1))
                   continue
-              scope=group[0][1]>=playlist_start
-              if scope and out.count(marker)!=1: raise SystemExit('Playlist scope missing')
-              at,actual=locate(out,b,scope)
-              if at>=0:
-                  print('Already present patch block '+str(i+1))
-                  continue
-              at,actual=locate(out,a,scope)
-              if at<0:
-                  raise SystemExit('Refusing: live code lacks unique prerequisite context #'+str(i+1)+' (playlist scope='+str(scope)+')')
-              replacement=b if actual==a else b.rstrip()
-              out=out[:at]+replacement+out[at+len(actual):]
-              applied.append((actual,replacement,scope))
+              if out.count(a)!=1:
+                  raise SystemExit('Refusing: live prerequisite not unique, block '+str(i+1))
+              out=out.replace(a,b,1);applied.append((a,b))
           reverse=out
-          for a,b,scope in reversed(applied):
-              at,actual=locate(reverse,b,scope)
-              if at<0 or actual!=b: raise SystemExit('Cannot verify reversible patch')
-              reverse=reverse[:at]+a+reverse[at+len(b):]
-          if reverse!=live: raise SystemExit('Unrelated changes detected')
-          print('Scoped playlist prerequisites and editorial patch applied; unrelated live code preserved')
+          for a,b in reversed(applied):
+              if reverse.count(b)!=1: raise SystemExit('Refusing non-reversible patch')
+              reverse=reverse.replace(b,a,1)
+          if reverse!=live or suffix(out)!=suffix(live):
+              raise SystemExit('Refusing unrelated live code modification')
           (d/'candidate.mjs').write_text(out)
+          print('Editorial patch reversible; existing Watch Party preserved ('+party_tests+')')
           print('Candidate SHA256: '+hashlib.sha256(out.encode()).hexdigest())
           PY
           node --check "$tmp/candidate.mjs" >/dev/null 2>&1
           cp "$tmp/candidate.mjs" tool/bridge/worker.mjs
+          if [[ "$(cat "$tmp/party-tests")" == legacy ]]; then
+            cp live-party-base/tool/bridge/watch_party_test.mjs tool/bridge/watch_party_test.mjs
+          fi
           for suite in identity external migration club social keys community chunks curated watch playlists; do
             (cd tool/bridge && node "$suite"_test.mjs) > "$tmp/suite.log" 2>&1 || { echo "::error::Patched live code failed suite $suite"; exit 1; }
             echo "Patched live OK $suite"
@@ -188,18 +188,26 @@ jobs:
             cmp -s "$tmp/$key.settings.config" "$tmp/$key.after.config"
           }
           smoke() {
-            local origin="$1" code
-            for i in 1 2 3 4 5 6; do
-              if curl -fsS --max-time 15 "$origin/status" -o "$tmp/status.json" && jq -e '.app=="deep-cinema-bridge"' "$tmp/status.json" >/dev/null; then
-                code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/img/pl-00000000-0000-0000-0000-000000000000-00000000000000000000000000000000.jpg") || code=000
-                if [[ "$code" == 401 ]]; then
-                  code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/club/curated") || code=000
-                  if [[ "$code" == 401 ]]; then
-                    code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$origin/playlists/list") || code=000
-                    [[ "$code" == 401 ]] && return 0
-                  fi
-                fi
+            local origin="$1" code ok endpoint attempt
+            for attempt in 1 2 3 4 5 6; do
+              ok=1
+              if ! curl -fsS --max-time 15 "$origin/status" -o "$tmp/status.json" || ! jq -e '.app=="deep-cinema-bridge"' "$tmp/status.json" >/dev/null; then
+                echo "Health attempt $attempt: status not ready"
+                ok=0
               fi
+              if [[ "$ok" == 1 ]]; then
+                for endpoint in img/pl-00000000-0000-0000-0000-000000000000-00000000000000000000000000000000.jpg club/curated; do
+                  code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/$endpoint") || code=000
+                  if [[ "$code" != 401 ]]; then echo "Health attempt $attempt: $endpoint HTTP $code"; ok=0; break; fi
+                done
+              fi
+              if [[ "$ok" == 1 ]]; then
+                for endpoint in playlists/list party/capabilities party/inbox party/create party/join party/state party/heartbeat party/play party/pause party/seek party/mode party/kick party/transfer party/leave party/close; do
+                  code=$(curl -sS --max-time 12 -X POST -H 'Content-Type: application/json' -d '{}' -o /dev/null -w '%{http_code}' "$origin/$endpoint") || code=000
+                  if [[ "$code" != 401 ]]; then echo "Health attempt $attempt: $endpoint HTTP $code"; ok=0; break; fi
+                done
+              fi
+              [[ "$ok" == 1 ]] && return 0
               sleep 5
             done
             return 1
@@ -212,21 +220,30 @@ jobs:
             echo "::error::Test verification failed, original test code restored"
             exit 1
           fi
-          echo "Test Worker passed health, cover, curated and playlist anonymous rejection; bindings unchanged"
+          echo "Test Worker passed health, cover, curated, playlist and Watch Party anonymous rejection; bindings unchanged"
           getcode current "$prod"
           cmp -s "$tmp/current.mjs" "$tmp/prod.mjs" || { echo "::error::Production changed concurrently"; exit 1; }
           settings_equal prod "$prod" || { echo "::error::Production settings changed concurrently"; exit 1; }
           if ! cmp -s "$tmp/prod.mjs" "$tmp/candidate.mjs"; then
             deploy "$prod" "$pmod" "$tmp/candidate.mjs"
-            if ! settings_equal prod "$prod" || ! smoke 'https://deep-cinema.deepworks-soft.workers.dev'; then
+            failure=''
+            if ! settings_equal prod "$prod"; then
+              failure='settings mismatch'
+            elif ! smoke 'https://deep-cinema.deepworks-soft.workers.dev'; then
+              failure='health or authentication smoke'
+            fi
+            if [[ -n "$failure" ]]; then
               deploy "$prod" "$pmod" "$tmp/prod.mjs"
-              echo "::error::Production verification failed, original code restored"
+              getcode restored "$prod"
+              cmp -s "$tmp/restored.mjs" "$tmp/prod.mjs" || { echo "::error::Rollback code comparison failed"; exit 1; }
+              settings_equal prod "$prod" || { echo "::error::Rollback settings comparison failed"; exit 1; }
+              echo "::error::Production verification failed ($failure), original code and settings verified restored"
               exit 1
             fi
           else
             smoke 'https://deep-cinema.deepworks-soft.workers.dev'
           fi
-          echo "Production editorial patch verified; bindings unchanged; webhook not modified"
+          echo "Production editorial patch verified; Watch Party, bindings and webhook unchanged"
       - name: Notify owner
         if: always()
         env:
@@ -236,6 +253,6 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$TG" && -n "$CHAT" ]] || exit 0
-          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: уточнены ошибки распознавания музыки, проверки пройдены"; else msg="❌ Yo-ho: обновление распознавания музыки не прошло проверку"; fi
+          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: основной Worker обновлён — управление жанрами и логотипы плейлистов, проверки пройдены"; else msg="❌ Yo-ho: обновление редакционных функций Worker не прошло проверку"; fi
           jq -nc --arg chat "$CHAT" --arg msg "$msg" '{chat_id:$chat,text:$msg}' > "$RUNNER_TEMP/notify.json"
           curl -fsS --max-time 20 -o /dev/null -H 'Content-Type: application/json' --data-binary @"$RUNNER_TEMP/notify.json" "https://api.telegram.org/bot$TG/sendMessage"
