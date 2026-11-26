@@ -119,10 +119,33 @@ jobs:
           expected=hashlib.sha256(apk.read_bytes()).hexdigest()
           api("/resources",{"path":"disk:/Yo-ho/"+V},method="PUT",auth=True,allowed=(409,))
           def upload(path,file):
-              href=api("/resources/upload",{"path":path,"overwrite":"true"},auth=True)["href"]
-              result=subprocess.run(["curl","--silent","--output","/dev/null","--write-out","%{http_code}","--max-time","900","--upload-file",str(file),href],capture_output=True,text=True)
-              if result.returncode or result.stdout not in ("200","201","202"):
-                  sys.exit("Disk upload failed: "+file.name+"; HTTP "+result.stdout)
+              # Use an existing file only when verified by the public download below.
+              meta=api("/resources",{"path":path,"fields":"size"},auth=True,allowed=(404,))
+              if file.name.endswith(".apk") and meta and meta.get("size")==file.stat().st_size:
+                  print("Existing APK has expected size; checking full public hash")
+                  return
+              link=api("/resources/upload",{"path":path,"overwrite":"true" if meta else "false"},auth=True,allowed=(423,409))
+              if link:
+                  result=subprocess.run(["curl","--silent","--output","/dev/null","--write-out","%{http_code}","--max-time","900","--upload-file",str(file),link["href"]],capture_output=True,text=True)
+                  if not result.returncode and result.stdout in ("200","201","202"): return
+                  print("Direct upload failed for",file.name,"HTTP",result.stdout)
+              else:
+                  print("Direct upload link refused for",file.name)
+              # Import the identical public stable GitHub asset instead.
+              source="https://github.com/"+os.environ["GH_REPO"]+"/releases/download/v"+V+"/"+file.name
+              op=api("/resources/upload",{"path":path,"url":source},method="POST",auth=True,allowed=(423,409))
+              if not op: sys.exit("Yandex Disk also refused remote import for "+file.name+" (locked or conflicting resource)")
+              href=op.get("href","")
+              parsed=q.urlparse(href)
+              assert parsed.scheme=="https" and parsed.hostname=="cloud-api.yandex.net" and parsed.path.startswith("/v1/disk/operations/"),"Unexpected import status URL"
+              for _ in range(60):
+                  try:
+                      with u.urlopen(u.Request(href,headers={"Authorization":"OAuth "+T,"User-Agent":"Yo-ho"}),timeout=30) as r: status=json.loads(r.read()).get("status")
+                  except Exception: sys.exit("Import status check failed")
+                  if status=="success": return
+                  if status=="failed": sys.exit("Remote import failed for "+file.name)
+                  time.sleep(5)
+              sys.exit("Remote import timed out for "+file.name)
           upload("disk:/Yo-ho/"+V+"/"+name,apk)
           # Verify full publicly downloaded APK before switching the manifest.
           actual=get_public("/"+V+"/"+name)
