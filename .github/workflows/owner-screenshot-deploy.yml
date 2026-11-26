@@ -1,23 +1,50 @@
-name: Yo-ho — Virtual channels 0.8.104 production
+name: Yo-ho — Channel automatic runtime 0.8.105 production
 on:
   push:
     branches: [automation/editorial-worker-0.8.85]
     paths: ['.github/workflows/owner-screenshot-deploy.yml']
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: yoho-cloudflare-production
   cancel-in-progress: false
 jobs:
   patch:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
+      - name: Require successful exact beta build and staging before production
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ready() {
+            local sha="$1" expected_job="$2" data run
+            data=$(gh api "repos/$GH_REPO/actions/runs?head_sha=$sha&event=push&per_page=30") || return 1
+            for run in $(jq -r '.workflow_runs[] | select(.conclusion=="success") | .id' <<<"$data"); do
+              if gh api "repos/$GH_REPO/actions/runs/$run/jobs" | jq -e --arg n "$expected_job" '.jobs | any(.name==$n and .conclusion=="success")' >/dev/null; then
+                echo "Verified successful run $run for $sha"
+                return 0
+              fi
+            done
+            return 1
+          }
+          for attempt in $(seq 1 40); do
+            if ready 80252bf1fb0d1d414b06071950ce4e04b0688190 'publish-beta / publish' && ready 861cc034c0d4197cef53dcfc561589159f1736fe 'cloudflare'; then
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::Exact beta build or staging deployment not verified; production not touched"
+          exit 1
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: ${{ secrets.SRC_REPO }}
           token: ${{ secrets.SRC_TOKEN }}
-          ref: f3498896b0f3076435eb091d3c136ee532bf19ce
+          ref: e4cf43396dc54cccd96b3d2ab6d23c2262a2b298
           persist-credentials: false
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -25,6 +52,13 @@ jobs:
           token: ${{ secrets.SRC_TOKEN }}
           ref: 405e97bb00be7678a621c74951392b684f4870ca
           path: channels-base
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: ${{ secrets.SRC_REPO }}
+          token: ${{ secrets.SRC_TOKEN }}
+          ref: f3498896b0f3076435eb091d3c136ee532bf19ce
+          path: channels-mvp
           persist-credentials: false
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -128,6 +162,10 @@ jobs:
           new=pathlib.Path('tool/bridge/worker.js').read_text()
           legacy=pathlib.Path('live-party-base/tool/bridge/worker.js').read_text()
           live=(d/'prod.mjs').read_text()
+          channel_marker='// Virtual channel schedules: metadata only. No source URL, account or media proxy.'
+          if live.count(channel_marker)>1: raise SystemExit('Refusing ambiguous channel scope')
+          if channel_marker in live:
+              old=pathlib.Path('channels-mvp/tool/bridge/worker.js').read_text()
           marker='// Watch Party: pure room state machine; server clock, no media URLs.'
           if any(x.count(marker)!=1 for x in (old,new,legacy,live)):
               raise SystemExit('Refusing: cannot identify Watch Party scope')
@@ -255,6 +293,6 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$TG" && -n "$CHAT" ]] || exit 0
-          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: основной Worker обновлён — Каналы 0.8.104, проверки пройдены. Команда /каналы"; else msg="❌ Yo-ho: обновление Worker для Каналов не прошло проверку"; fi
+          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: основной Worker обновлён — Каналы 0.8.105, автоматический хронометраж. Команда /каналы"; else msg="❌ Yo-ho: обновление Worker для Каналов 0.8.105 не прошло проверку"; fi
           jq -nc --arg chat "$CHAT" --arg msg "$msg" '{chat_id:$chat,text:$msg}' > "$RUNNER_TEMP/notify.json"
           curl -fsS --max-time 20 -o /dev/null -H 'Content-Type: application/json' --data-binary @"$RUNNER_TEMP/notify.json" "https://api.telegram.org/bot$TG/sendMessage"
