@@ -173,3 +173,11 @@ jobs:
           gh api "repos/$GH_REPO/releases/latest" > latest.json
           jq -e --arg tag "$TAG" --arg apk "$APK" --arg md "sha256:$MANIFEST_SHA" --arg ad "sha256:$APK_SHA" '.tag_name==$tag and (.prerelease|not) and (.draft|not) and any(.assets[]; .name=="manifest.json" and .digest==$md and .state=="uploaded") and any(.assets[]; .name==$apk and .digest==$ad and .state=="uploaded")' latest.json >/dev/null
           echo "Published stable $TAG; previous $STABLE"
+
+  mirror-legacy:
+    needs: promote
+    permissions:
+      contents: read
+    uses: ./.github/workflows/legacy-stable-sync.yml
+    secrets:
+      YADISK_TOKEN: ${{ secrets.YADISK_TOKEN }}
