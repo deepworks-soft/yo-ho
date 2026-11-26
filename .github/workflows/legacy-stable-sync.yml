@@ -1,0 +1,124 @@
+name: Доставка стабильной версии старым клиентам
+on:
+  workflow_call:
+    secrets:
+      YADISK_TOKEN:
+        required: false
+  push:
+    branches: [main]
+    paths: [legacy-sync-request.json]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: legacy-stable-disk
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      T: ${{ secrets.YADISK_TOKEN }}
+    steps:
+      - name: Download only current GitHub stable and verify signed manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/releases/latest" > release.json
+          V=$(jq -er '.tag_name | sub("^v";"")' release.json)
+          [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          jq -e '(.draft|not) and (.prerelease|not)' release.json >/dev/null
+          gh release download "v$V" --repo "$GH_REPO" --pattern "Yo-ho-$V.apk" --pattern manifest.json --dir out
+          export VERSION="$V"
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          import os,json,hashlib,base64,pathlib,subprocess,tempfile
+          v=os.environ["VERSION"]
+          p=pathlib.Path("out")
+          name=f"Yo-ho-{v}.apk"
+          key="EqFtZwl1Pijcsn8lhxOenM9mRvqAHnIfINZ8kEZ5eYM="
+          m=json.loads((p/"manifest.json").read_text())
+          assert m["app"]=="yo-ho" and m["version"]==v and m["key"]==key
+          assert len(m["files"])==1
+          f=m["files"][0]
+          assert f["name"]==name and f["kind"]=="apk"
+          data=(p/name).read_bytes()
+          sha=hashlib.sha256(data).hexdigest()
+          assert len(data)==f["size"] and sha==f["sha256"]
+          with tempfile.TemporaryDirectory() as tmp:
+              t=pathlib.Path(tmp)
+              (t/"pub.der").write_bytes(bytes.fromhex("302a300506032b6570032100")+base64.b64decode(key,validate=True))
+              (t/"msg").write_bytes(f"yo-ho-update-v1\n{name}\n{sha}\n{v}".encode())
+              (t/"sig").write_bytes(base64.b64decode(f["sig"],validate=True))
+              subprocess.run(["openssl","pkeyutl","-verify","-pubin","-inkey",str(t/"pub.der"),"-keyform","DER","-rawin","-in",str(t/"msg"),"-sigfile",str(t/"sig")],check=True)
+          print("Verified GitHub stable:",v)
+          PY
+      - name: Mirror existing signed stable APK and manifest to original public folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, urllib.request as u, urllib.parse as q, urllib.error as e, json, pathlib, hashlib, subprocess, time, sys
+          V=os.environ["VERSION"]
+          T=os.environ.get("T","")
+          if not T: sys.exit("Missing existing YADISK_TOKEN in release repository")
+          base="https://cloud-api.yandex.net/v1/disk"
+          public="https://yadi.sk/d/1zjlZMb0mavSzg"
+          def api(endpoint, params, method="GET", auth=False, allowed=()):
+              url=base+endpoint+"?"+q.urlencode(params)
+              headers={"User-Agent":"Yo-ho"}
+              if auth: headers["Authorization"]="OAuth "+T
+              try:
+                  with u.urlopen(u.Request(url,headers=headers,method=method),timeout=60) as r:
+                      raw=r.read()
+                      return json.loads(raw) if raw else {}
+              except e.HTTPError as err:
+                  if err.code in allowed: return None
+                  sys.exit("Yandex Disk API "+endpoint+": HTTP "+str(err.code))
+              except Exception:
+                  sys.exit("Yandex Disk API "+endpoint+": connection failed")
+          def get_public(path):
+              href=api("/public/resources/download",{"public_key":public,"path":path})["href"]
+              try:
+                  with u.urlopen(u.Request(href,headers={"User-Agent":"Yo-ho"}),timeout=120) as r: return r.read()
+              except Exception:
+                  sys.exit("Public legacy download failed: "+path)
+          def version(v): return tuple(map(int,v.split(".")))
+          old=json.loads(get_public("/manifest.json"))
+          print("Legacy public version:",old["version"])
+          assert version(old["version"])<=version(V), "Refusing to downgrade legacy channel"
+          root=api("/resources",{"path":"disk:/Yo-ho","fields":"public_url,public_key,type"},auth=True)
+          assert root["type"]=="dir" and root.get("public_url"),"Original folder is not shared"
+          # The old public link and the authenticated folder must serve identical old manifest bytes.
+          private_href=api("/resources/download",{"path":"disk:/Yo-ho/manifest.json"},auth=True)["href"]
+          try:
+              with u.urlopen(private_href,timeout=60) as r: private_old=json.loads(r.read())
+          except Exception: sys.exit("Authenticated manifest read failed")
+          assert private_old==old,"Authenticated folder does not match original public manifest"
+          name=f"Yo-ho-{V}.apk"
+          manifest=pathlib.Path("out/manifest.json").read_bytes()
+          apk=pathlib.Path("out")/name
+          expected=hashlib.sha256(apk.read_bytes()).hexdigest()
+          api("/resources",{"path":"disk:/Yo-ho/"+V},method="PUT",auth=True,allowed=(409,))
+          def upload(path,file):
+              href=api("/resources/upload",{"path":path,"overwrite":"true"},auth=True)["href"]
+              result=subprocess.run(["curl","--silent","--output","/dev/null","--write-out","%{http_code}","--max-time","900","--upload-file",str(file),href],capture_output=True,text=True)
+              if result.returncode or result.stdout not in ("200","201","202"):
+                  sys.exit("Disk upload failed: "+file.name+"; HTTP "+result.stdout)
+          upload("disk:/Yo-ho/"+V+"/"+name,apk)
+          # Verify full publicly downloaded APK before switching the manifest.
+          actual=get_public("/"+V+"/"+name)
+          assert len(actual)==apk.stat().st_size and hashlib.sha256(actual).hexdigest()==expected,"Public APK checksum mismatch"
+          latest=subprocess.check_output(["gh","api","repos/"+os.environ["GH_REPO"]+"/releases/latest","--jq",".tag_name"],text=True).strip()
+          assert latest=="v"+V,"Stable changed while mirroring; refusing to change manifest"
+          assert version(json.loads(get_public("/manifest.json"))["version"])<=version(V),"Legacy channel advanced"
+          upload("disk:/Yo-ho/manifest.json",pathlib.Path("out/manifest.json"))
+          assert get_public("/manifest.json")==manifest,"Public manifest readback mismatch"
+          print("Legacy channel verified from original public URL:",V)
+          PY
