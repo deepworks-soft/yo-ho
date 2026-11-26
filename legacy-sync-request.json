@@ -1,4 +1,1 @@
-{
-  "purpose": "Restore legacy delivery of the existing stable release; never publish beta",
-  "expected_stable": "0.8.94"
-}
+{"purpose":"Restore current stable on original legacy public link","expected_stable":"0.8.94","attempt":2}
