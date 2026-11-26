@@ -1,0 +1,9 @@
+#EXTM3U
+#EXTINF:-1 tvg-id="NTV.ru" tvg-name="НТВ" tvg-country="RU" tvg-language="Russian" group-title="General",НТВ
+https://cdn.ntv.ru/ntv0/playlist.m3u8
+#EXTINF:-1 tvg-id="NTVHit.ru" tvg-name="НТВ-Хит" tvg-country="RU" tvg-language="Russian" group-title="Movies",НТВ-Хит
+https://cdn.ntv.ru/th_hit/playlist.m3u8
+#EXTINF:-1 tvg-id="NTVSeries.ru" tvg-name="НТВ-Сериал" tvg-country="RU" tvg-language="Russian" group-title="Series",НТВ-Сериал
+https://cdn.ntv.ru/th_serial/playlist.m3u8
+#EXTINF:-1 tvg-id="NTVLaw.ru" tvg-name="НТВ-Право" tvg-country="RU" tvg-language="Russian" group-title="Entertainment",НТВ-Право
+https://cdn.ntv.ru/th_pravo/playlist.m3u8
