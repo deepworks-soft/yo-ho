@@ -1,7 +1,7 @@
-name: Yo-ho — AudD exact service diagnostics
+name: Yo-ho — Watch Party production activation
 on:
   push:
-    branches: [automation/editorial-worker-0.8.85]
+    branches: [automation/watch-party-0.8.96]
     paths: ['.github/workflows/owner-screenshot-deploy.yml']
 permissions:
   contents: read
@@ -13,23 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          repository: ${{ secrets.SRC_REPO }}
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 780b026580c316bfadfe31cf583bbe09ef222f26
+          ref: 2a79e288516f8e0c8fb6395c89eda4586dcefe1f
           persist-credentials: false
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          repository: ${{ secrets.SRC_REPO }}
           token: ${{ secrets.SRC_TOKEN }}
-          ref: ccc6fb9ef5a17b68b730d2410b880306e2d9399e
-          path: editorial-base
+          ref: 86328e14879363e0b14d2d9fae139eebf8849a11
+          path: party-base
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
-      - name: Validate exact source and mocked bot transport
+      - name: Validate exact source and full compatibility regression
         working-directory: tool/bridge
         run: |
           set -euo pipefail
@@ -115,55 +115,42 @@ jobs:
           node --check "$tmp/prod.mjs" >/dev/null 2>&1
           node --check "$tmp/test.mjs" >/dev/null 2>&1
           python3 - "$tmp" <<'PY'
-          import pathlib,sys,difflib,hashlib
+          import pathlib,sys,hashlib
           d=pathlib.Path(sys.argv[1])
-          old=pathlib.Path('editorial-base/tool/bridge/worker.js').read_text()
+          old=pathlib.Path('party-base/tool/bridge/worker.js').read_text()
           new=pathlib.Path('tool/bridge/worker.js').read_text()
           live=(d/'prod.mjs').read_text()
-          aa=old.splitlines(keepends=True); bb=new.splitlines(keepends=True)
-          groups=list(difflib.SequenceMatcher(None,aa,bb,autojunk=False).get_grouped_opcodes(3))
-          out=live; applied=[]
-          marker='let playlistSchemaReady = null;'
-          playlist_start=next(i for i,l in enumerate(aa) if l.strip()==marker)
-          def locate(text,needle,scope):
-              start=text.index(marker) if scope else 0
-              sub=text[start:]
-              if needle and sub.count(needle)==1: return start+sub.index(needle),needle
-              if scope and needle and sub.rstrip().endswith(needle.rstrip()):
-                  n=needle.rstrip()
-                  end=len(text.rstrip())
-                  return end-len(n),n
-              return -1,needle
-          for i,group in enumerate(groups):
-              a=''.join(aa[group[0][1]:group[-1][2]])
-              b=''.join(bb[group[0][3]:group[-1][4]])
-              if a==b: continue
-              if 'async function ownerScreenshot(request, env)' in b and 'async function ownerScreenshot(request, env)' not in a:
-                  if live.count('async function ownerScreenshot(request, env)')!=1 or live.count("if (url.pathname === '/owner/screenshot') return ownerScreenshot(request, env);")!=1:
-                      raise SystemExit('Existing screenshot handler cannot be confirmed')
-                  print('Preserving pre-existing owner screenshot handler')
-                  continue
-              scope=group[0][1]>=playlist_start
-              if scope and out.count(marker)!=1: raise SystemExit('Playlist scope missing')
-              at,actual=locate(out,b,scope)
-              if at>=0:
-                  print('Already present patch block '+str(i+1))
-                  continue
-              at,actual=locate(out,a,scope)
-              if at<0:
-                  raise SystemExit('Refusing: live code lacks unique prerequisite context #'+str(i+1)+' (playlist scope='+str(scope)+')')
-              replacement=b if actual==a else b.rstrip()
-              out=out[:at]+replacement+out[at+len(actual):]
-              applied.append((actual,replacement,scope))
-          reverse=out
-          for a,b,scope in reversed(applied):
-              at,actual=locate(reverse,b,scope)
-              if at<0 or actual!=b: raise SystemExit('Cannot verify reversible patch')
-              reverse=reverse[:at]+a+reverse[at+len(b):]
-          if reverse!=live: raise SystemExit('Unrelated changes detected')
-          print('Scoped playlist prerequisites and editorial patch applied; unrelated live code preserved')
-          (d/'candidate.mjs').write_text(out)
-          print('Candidate SHA256: '+hashlib.sha256(out.encode()).hexdigest())
+          marker='// Watch Party: pure room state machine; server clock, no media URLs.'
+          if new.count(marker)!=1 or marker in old or marker in live:
+              raise SystemExit('Refusing: unexpected Watch Party source state')
+          suffix=new[new.index(marker):]
+          pairs=[
+              ('      await resumeErasures(env);\n','      await resumeErasures(env);\n      await partyCleanup(env).catch(() => {});\n'),
+              ("      if (url.pathname.startsWith('/playlists/')) return communityPlaylists(request, url, env);\n","      if (url.pathname.startsWith('/playlists/')) return communityPlaylists(request, url, env);\n      if (url.pathname.startsWith('/party/')) return watchParty(request, url, env);\n"),
+              ('  await Promise.all([socialInit(env),qualityInit(env),communityPlaylistSchema(db),tguInit(env)]);\n  await db.batch([','  await Promise.all([socialInit(env),qualityInit(env),communityPlaylistSchema(db),tguInit(env)]);\n  await partyCleanup(env,user);\n  await db.batch(['),
+              ("      db.prepare('DELETE FROM advice WHERE src = ? OR dst = ?').bind(user, user),\n    ]);\n  } catch {}\n}","      db.prepare('DELETE FROM advice WHERE src = ? OR dst = ?').bind(user, user),\n    ]);\n    await partyCleanup(env,user);\n  } catch {}\n}")
+          ]
+          def apply(text):
+              for a,b in pairs:
+                  if text.count(a)!=1 or b in text:
+                      raise SystemExit('Refusing: unique prerequisite context missing')
+                  text=text.replace(a,b,1)
+              return text
+          base_patch=apply(old)
+          if (base_patch.rstrip()+'\n\n'+suffix).rstrip()!=new.rstrip():
+              raise SystemExit('Refusing: source contains changes outside approved Watch Party scope')
+          patched=apply(live)
+          candidate=patched.rstrip()+'\n\n'+suffix
+          reverse=patched
+          for a,b in reversed(pairs):
+              if reverse.count(b)!=1:
+                  raise SystemExit('Refusing: non-reversible change')
+              reverse=reverse.replace(b,a,1)
+          if reverse!=live:
+              raise SystemExit('Refusing: unrelated live code changed')
+          (d/'candidate.mjs').write_text(candidate)
+          print('Only approved Watch Party insertion blocks applied to live code')
+          print('Candidate SHA256: '+hashlib.sha256(candidate.encode()).hexdigest())
           PY
           node --check "$tmp/candidate.mjs" >/dev/null 2>&1
           cp "$tmp/candidate.mjs" tool/bridge/worker.mjs
@@ -196,7 +183,13 @@ jobs:
                   code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/club/curated") || code=000
                   if [[ "$code" == 401 ]]; then
                     code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$origin/playlists/list") || code=000
-                    [[ "$code" == 401 ]] && return 0
+                    if [[ "$code" == 401 ]]; then
+                      for endpoint in capabilities inbox create join state heartbeat play pause seek mode kick transfer leave close; do
+                        code=$(curl -sS --max-time 12 -X POST -H 'Content-Type: application/json' -d '{}' -o /dev/null -w '%{http_code}' "$origin/party/$endpoint") || return 1
+                        [[ "$code" == 401 ]] || return 1
+                      done
+                      return 0
+                    fi
                   fi
                 fi
               fi
@@ -212,7 +205,7 @@ jobs:
             echo "::error::Test verification failed, original test code restored"
             exit 1
           fi
-          echo "Test Worker passed health, cover, curated and playlist anonymous rejection; bindings unchanged"
+          echo "Test Worker passed health, cover, curated, playlist and Watch Party anonymous rejection; bindings unchanged"
           getcode current "$prod"
           cmp -s "$tmp/current.mjs" "$tmp/prod.mjs" || { echo "::error::Production changed concurrently"; exit 1; }
           settings_equal prod "$prod" || { echo "::error::Production settings changed concurrently"; exit 1; }
@@ -226,7 +219,7 @@ jobs:
           else
             smoke 'https://deep-cinema.deepworks-soft.workers.dev'
           fi
-          echo "Production editorial patch verified; bindings unchanged; webhook not modified"
+          echo "Production Watch Party patch verified; bindings unchanged; webhook not modified"
       - name: Notify owner
         if: always()
         env:
@@ -236,6 +229,6 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$TG" && -n "$CHAT" ]] || exit 0
-          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: уточнены ошибки распознавания музыки, проверки пройдены"; else msg="❌ Yo-ho: обновление распознавания музыки не прошло проверку"; fi
+          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: основной Worker поддерживает совместный просмотр, проверки пройдены"; else msg="❌ Yo-ho: активация совместного просмотра на основном Worker не прошла проверку"; fi
           jq -nc --arg chat "$CHAT" --arg msg "$msg" '{chat_id:$chat,text:$msg}' > "$RUNNER_TEMP/notify.json"
           curl -fsS --max-time 20 -o /dev/null -H 'Content-Type: application/json' --data-binary @"$RUNNER_TEMP/notify.json" "https://api.telegram.org/bot$TG/sendMessage"
