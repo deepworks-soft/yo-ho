@@ -18,7 +18,7 @@ jobs:
       source: ${{ steps.request.outputs.source }}
       mode: ${{ steps.request.outputs.mode }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
       - name: Validate request
@@ -33,15 +33,15 @@ jobs:
           [[ "$mode" == check || "$mode" == deploy ]]
           echo "source=$source" >> "$GITHUB_OUTPUT"
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         if: steps.request.outputs.mode == 'deploy'
         with:
-          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          repository: ${{ secrets.SRC_REPO }}
           token: ${{ secrets.SRC_TOKEN }}
           ref: ${{ steps.request.outputs.source }}
           path: source
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         if: steps.request.outputs.mode == 'deploy'
         with:
           node-version: '24'
@@ -61,10 +61,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         if: needs.validate.outputs.mode == 'deploy'
         with:
-          repository: kozenkovnikitavladimirovich-max/deep-cinema
+          repository: ${{ secrets.SRC_REPO }}
           token: ${{ secrets.SRC_TOKEN }}
           ref: ${{ needs.validate.outputs.source }}
           persist-credentials: false
@@ -132,7 +132,11 @@ jobs:
           cmp -s "$tmp/test.config" "$tmp/after.config" || { echo "::error::Worker settings differ; inspect before further deployment"; exit 1; }
           for i in 1 2 3 4 5 6; do
             if curl -fsS --max-time 15 -H 'Accept: application/json' 'https://deep-cinema-test.deepworks-soft.workers.dev/status' -o "$tmp/status.json" && jq -e '.app == "deep-cinema-bridge"' "$tmp/status.json" >/dev/null; then
-              echo "::notice::Test Worker status OK"
+              for endpoint in capabilities inbox create join state heartbeat play pause seek mode kick transfer leave close; do
+                code=$(curl -sS --max-time 12 -X POST -H 'Content-Type: application/json' -d '{}' -o "$tmp/party.json" -w '%{http_code}' "https://deep-cinema-test.deepworks-soft.workers.dev/party/$endpoint")
+                [[ "$code" == 401 ]] || { echo "::error::Watch Party auth smoke failed for $endpoint ($code)"; exit 1; }
+              done
+              echo "::notice::Test Worker status and Watch Party unauthenticated rejection OK"
               exit 0
             fi
             sleep 5
