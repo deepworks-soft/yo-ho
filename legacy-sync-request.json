@@ -1,0 +1,4 @@
+{
+  "purpose": "Restore legacy delivery of the existing stable release; never publish beta",
+  "expected_stable": "0.8.94"
+}
