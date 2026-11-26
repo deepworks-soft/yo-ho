@@ -166,6 +166,11 @@ jobs:
           if not found:
               for phrase,label in [('Could not resolve','resolution'),('Could not download','download'),('Could not GET','http-get'),('Could not HEAD','http-head'),('Read timed out','read-timeout'),('Connection timed out','connect-timeout'),('UnknownHostException','dns'),('PKIX path building failed','tls'),('No matching variant','variant'),('Plugin [id:','plugin')]:
                   if phrase.lower() in log.lower(): print('Gradle dependency diagnostic: '+label)
+              # Only fixed public repository labels and numeric HTTP codes, never raw URLs.
+              hosts={'dl.google.com':'google-maven','maven.google.com':'google-maven','repo.maven.apache.org':'maven-central','repo1.maven.org':'maven-central','plugins.gradle.org':'gradle-plugin-portal','plugins-artifacts.gradle.org':'gradle-plugin-portal'}
+              for host,label in hosts.items():
+                  if re.search(r'https?://'+re.escape(host)+r'/',log): print('Gradle repository diagnostic: '+label)
+              for code in sorted(set(re.findall(r'(?:status code|HTTP status|HTTP response code)\s*[:=]?\s*([45][0-9]{2})',log,re.I))): print('Gradle HTTP status: '+code)
               for test in ['matchActualPublicCatalogEnglishNamesWithoutCollapsingDistinctChannels','exactOwnerLineupAndPersonalVariants','classicRussianOrderIgnoresProviderOrderAndKeepsRadioLast']:
                   if re.search(r'LiveTvTest\s*>\s*'+re.escape(test)+r'\s+FAILED',log): print('TV unit test failed: '+test)
               for phrase,label in [('compileReleaseKotlin','kotlin'),('testReleaseUnitTest','unit-tests'),('validateSigningRelease','signing'),('processReleaseResources','resources'),('OutOfMemoryError','memory'),('Could not resolve','dependency'),('daemon disappeared','daemon')]:
