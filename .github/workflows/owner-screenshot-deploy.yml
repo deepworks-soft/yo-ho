@@ -175,24 +175,26 @@ jobs:
             cmp -s "$tmp/$key.settings.config" "$tmp/$key.after.config"
           }
           smoke() {
-            local origin="$1" code
-            for i in 1 2 3 4 5 6; do
-              if curl -fsS --max-time 15 "$origin/status" -o "$tmp/status.json" && jq -e '.app=="deep-cinema-bridge"' "$tmp/status.json" >/dev/null; then
-                code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/img/pl-00000000-0000-0000-0000-000000000000-00000000000000000000000000000000.jpg") || code=000
-                if [[ "$code" == 401 ]]; then
-                  code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/club/curated") || code=000
-                  if [[ "$code" == 401 ]]; then
-                    code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$origin/playlists/list") || code=000
-                    if [[ "$code" == 401 ]]; then
-                      for endpoint in capabilities inbox create join state heartbeat play pause seek mode kick transfer leave close; do
-                        code=$(curl -sS --max-time 12 -X POST -H 'Content-Type: application/json' -d '{}' -o /dev/null -w '%{http_code}' "$origin/party/$endpoint") || return 1
-                        [[ "$code" == 401 ]] || return 1
-                      done
-                      return 0
-                    fi
-                  fi
-                fi
+            local origin="$1" code ok endpoint attempt
+            for attempt in 1 2 3 4 5 6; do
+              ok=1
+              if ! curl -fsS --max-time 15 "$origin/status" -o "$tmp/status.json" || ! jq -e '.app=="deep-cinema-bridge"' "$tmp/status.json" >/dev/null; then
+                echo "Health attempt $attempt: status not ready"
+                ok=0
               fi
+              if [[ "$ok" == 1 ]]; then
+                for endpoint in img/pl-00000000-0000-0000-0000-000000000000-00000000000000000000000000000000.jpg club/curated; do
+                  code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/$endpoint") || code=000
+                  if [[ "$code" != 401 ]]; then echo "Health attempt $attempt: $endpoint HTTP $code"; ok=0; break; fi
+                done
+              fi
+              if [[ "$ok" == 1 ]]; then
+                for endpoint in playlists/list party/capabilities party/inbox party/create party/join party/state party/heartbeat party/play party/pause party/seek party/mode party/kick party/transfer party/leave party/close; do
+                  code=$(curl -sS --max-time 12 -X POST -H 'Content-Type: application/json' -d '{}' -o /dev/null -w '%{http_code}' "$origin/$endpoint") || code=000
+                  if [[ "$code" != 401 ]]; then echo "Health attempt $attempt: $endpoint HTTP $code"; ok=0; break; fi
+                done
+              fi
+              [[ "$ok" == 1 ]] && return 0
               sleep 5
             done
             return 1
@@ -211,9 +213,18 @@ jobs:
           settings_equal prod "$prod" || { echo "::error::Production settings changed concurrently"; exit 1; }
           if ! cmp -s "$tmp/prod.mjs" "$tmp/candidate.mjs"; then
             deploy "$prod" "$pmod" "$tmp/candidate.mjs"
-            if ! settings_equal prod "$prod" || ! smoke 'https://deep-cinema.deepworks-soft.workers.dev'; then
+            failure=''
+            if ! settings_equal prod "$prod"; then
+              failure='settings mismatch'
+            elif ! smoke 'https://deep-cinema.deepworks-soft.workers.dev'; then
+              failure='health or authentication smoke'
+            fi
+            if [[ -n "$failure" ]]; then
               deploy "$prod" "$pmod" "$tmp/prod.mjs"
-              echo "::error::Production verification failed, original code restored"
+              getcode restored "$prod"
+              cmp -s "$tmp/restored.mjs" "$tmp/prod.mjs" || { echo "::error::Rollback code comparison failed"; exit 1; }
+              settings_equal prod "$prod" || { echo "::error::Rollback settings comparison failed"; exit 1; }
+              echo "::error::Production verification failed ($failure), original code and settings verified restored"
               exit 1
             fi
           else
