@@ -3,6 +3,23 @@
   "policy": "Only official public free-to-view streams that may be used in third-party players. No community restreams, paid subscriptions, credentials, or region bypass.",
   "sources": [
     {
+      "name": "Legal Free IPTV — live",
+      "url": "https://biskyt.github.io/legalFreeIPTVplaylist/live.m3u",
+      "mode": "public"
+    },
+    {
+      "name": "Nexonic Official Россия",
+      "url": "https://nexonic-technologies.github.io/nexonic-iptv/playlists/countries/ru.m3u",
+      "mode": "official-tier",
+      "country": "RU"
+    },
+    {
+      "name": "НТВ — прямые эфиры",
+      "url": "https://raw.githubusercontent.com/deepworks-soft/yo-ho/tv-catalog/tv/ntv-reviewed.m3u",
+      "mode": "public",
+      "country": "RU"
+    },
+    {
       "name": "Broadcast Atlas",
       "url": "https://broadcastatlas.com/official.m3u",
       "mode": "public"
