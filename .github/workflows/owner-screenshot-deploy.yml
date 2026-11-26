@@ -1,4 +1,4 @@
-name: Yo-ho — Editorial genres and playlist branding production
+name: Yo-ho — Virtual channels 0.8.104 production
 on:
   push:
     branches: [automation/editorial-worker-0.8.85]
@@ -17,14 +17,14 @@ jobs:
         with:
           repository: ${{ secrets.SRC_REPO }}
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 405e97bb00be7678a621c74951392b684f4870ca
+          ref: f3498896b0f3076435eb091d3c136ee532bf19ce
           persist-credentials: false
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: ${{ secrets.SRC_REPO }}
           token: ${{ secrets.SRC_TOKEN }}
-          ref: 6b7abdbfca3ec4abec03aaa4e93cabcc274b3448
-          path: editorial-base
+          ref: 405e97bb00be7678a621c74951392b684f4870ca
+          path: channels-base
           persist-credentials: false
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
           cp worker.js worker.mjs
           node --check worker.mjs
-          for suite in identity external migration club social keys community chunks curated watch playlists; do
+          for suite in identity external migration club social keys community chunks curated watch playlists watch_party; do
             node "${suite}_test.mjs" > "$RUNNER_TEMP/owner-suite.log" 2>&1 || { echo "::error::Failed suite $suite"; exit 1; }
             echo "OK $suite"
           done
@@ -124,7 +124,7 @@ jobs:
           python3 - "$tmp" <<'PY'
           import pathlib,sys,hashlib,difflib
           d=pathlib.Path(sys.argv[1])
-          old=pathlib.Path('editorial-base/tool/bridge/worker.js').read_text()
+          old=pathlib.Path('channels-base/tool/bridge/worker.js').read_text()
           new=pathlib.Path('tool/bridge/worker.js').read_text()
           legacy=pathlib.Path('live-party-base/tool/bridge/worker.js').read_text()
           live=(d/'prod.mjs').read_text()
@@ -159,7 +159,7 @@ jobs:
           if reverse!=live or suffix(out)!=suffix(live):
               raise SystemExit('Refusing unrelated live code modification')
           (d/'candidate.mjs').write_text(out)
-          print('Editorial patch reversible; existing Watch Party preserved ('+party_tests+')')
+          print('Channels-only patch reversible; existing Watch Party preserved ('+party_tests+')')
           print('Candidate SHA256: '+hashlib.sha256(out.encode()).hexdigest())
           PY
           node --check "$tmp/candidate.mjs" >/dev/null 2>&1
@@ -167,7 +167,7 @@ jobs:
           if [[ "$(cat "$tmp/party-tests")" == legacy ]]; then
             cp live-party-base/tool/bridge/watch_party_test.mjs tool/bridge/watch_party_test.mjs
           fi
-          for suite in identity external migration club social keys community chunks curated watch playlists; do
+          for suite in identity external migration club social keys community chunks curated watch playlists watch_party; do
             (cd tool/bridge && node "$suite"_test.mjs) > "$tmp/suite.log" 2>&1 || { echo "::error::Patched live code failed suite $suite"; exit 1; }
             echo "Patched live OK $suite"
           done
@@ -196,7 +196,7 @@ jobs:
                 ok=0
               fi
               if [[ "$ok" == 1 ]]; then
-                for endpoint in img/pl-00000000-0000-0000-0000-000000000000-00000000000000000000000000000000.jpg club/curated; do
+                for endpoint in img/pl-00000000-0000-0000-0000-000000000000-00000000000000000000000000000000.jpg club/curated channels/list; do
                   code=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$origin/$endpoint") || code=000
                   if [[ "$code" != 401 ]]; then echo "Health attempt $attempt: $endpoint HTTP $code"; ok=0; break; fi
                 done
@@ -215,19 +215,21 @@ jobs:
           tmod=$(cat "$tmp/test.module")
           pmod=$(cat "$tmp/prod.module")
           deploy "$test" "$tmod" "$tmp/candidate.mjs"
-          if ! settings_equal test "$test" || ! smoke 'https://deep-cinema-test.deepworks-soft.workers.dev'; then
+          if ! getcode stage_actual "$test" || ! cmp -s "$tmp/stage_actual.mjs" "$tmp/candidate.mjs" || ! settings_equal test "$test" || ! smoke 'https://deep-cinema-test.deepworks-soft.workers.dev'; then
             deploy "$test" "$tmod" "$tmp/test.mjs"
             echo "::error::Test verification failed, original test code restored"
             exit 1
           fi
-          echo "Test Worker passed health, cover, curated, playlist and Watch Party anonymous rejection; bindings unchanged"
+          echo "Test Worker passed health, cover, curated, channels, playlist and Watch Party anonymous rejection; bindings unchanged"
           getcode current "$prod"
           cmp -s "$tmp/current.mjs" "$tmp/prod.mjs" || { echo "::error::Production changed concurrently"; exit 1; }
           settings_equal prod "$prod" || { echo "::error::Production settings changed concurrently"; exit 1; }
           if ! cmp -s "$tmp/prod.mjs" "$tmp/candidate.mjs"; then
             deploy "$prod" "$pmod" "$tmp/candidate.mjs"
             failure=''
-            if ! settings_equal prod "$prod"; then
+            if ! getcode prod_actual "$prod" || ! cmp -s "$tmp/prod_actual.mjs" "$tmp/candidate.mjs"; then
+              failure='deployed code mismatch'
+            elif ! settings_equal prod "$prod"; then
               failure='settings mismatch'
             elif ! smoke 'https://deep-cinema.deepworks-soft.workers.dev'; then
               failure='health or authentication smoke'
@@ -243,7 +245,7 @@ jobs:
           else
             smoke 'https://deep-cinema.deepworks-soft.workers.dev'
           fi
-          echo "Production editorial patch verified; Watch Party, bindings and webhook unchanged"
+          echo "Production channels-only patch verified; Watch Party, editorial features, bindings and webhook unchanged"
       - name: Notify owner
         if: always()
         env:
@@ -253,6 +255,6 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$TG" && -n "$CHAT" ]] || exit 0
-          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: основной Worker обновлён — управление жанрами и логотипы плейлистов, проверки пройдены"; else msg="❌ Yo-ho: обновление редакционных функций Worker не прошло проверку"; fi
+          if [[ "$RESULT" == success ]]; then msg="✅ Yo-ho: основной Worker обновлён — Каналы 0.8.104, проверки пройдены. Команда /каналы"; else msg="❌ Yo-ho: обновление Worker для Каналов не прошло проверку"; fi
           jq -nc --arg chat "$CHAT" --arg msg "$msg" '{chat_id:$chat,text:$msg}' > "$RUNNER_TEMP/notify.json"
           curl -fsS --max-time 20 -o /dev/null -H 'Content-Type: application/json' --data-binary @"$RUNNER_TEMP/notify.json" "https://api.telegram.org/bot$TG/sendMessage"
