@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "policy": "Only official public free-to-view streams that may be used in third-party players. No community restreams, paid subscriptions, credentials, or region bypass.",
+  "sources": [
+    {
+      "name": "Broadcast Atlas",
+      "url": "https://broadcastatlas.com/official.m3u",
+      "mode": "public"
+    },
+    {
+      "name": "M3U Player Pro",
+      "url": "https://m3uplayerpro.com/free-streams/all/playlist.m3u",
+      "mode": "public"
+    },
+    {
+      "name": "M3U Player Pro Россия",
+      "url": "https://m3uplayerpro.com/free-streams/country/russia/playlist.m3u",
+      "mode": "public",
+      "country": "RU"
+    },
+    {
+      "name": "M3U Player Pro русский",
+      "url": "https://m3uplayerpro.com/free-streams/ru/playlist.m3u",
+      "mode": "public"
+    },
+    {
+      "name": "Nexonic Official",
+      "url": "https://nexonic-technologies.github.io/nexonic-iptv/playlists/verified.m3u",
+      "mode": "official-tier"
+    },
+    {
+      "name": "Teleonline",
+      "url": "https://teleonline.github.io/listas/tv.m3u8",
+      "mode": "public"
+    },
+    {
+      "name": "FreeCastHub",
+      "url": "https://raw.githubusercontent.com/freecasthub/public-iptv/main/playlist.m3u",
+      "mode": "public"
+    },
+    {
+      "name": "Nexonic Radio",
+      "url": "https://nexonic-technologies.github.io/nexonic-iptv/playlists/radio/all.m3u",
+      "mode": "radio"
+    }
+  ]
+}
