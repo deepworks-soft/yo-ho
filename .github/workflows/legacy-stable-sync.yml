@@ -90,17 +90,29 @@ jobs:
               except Exception:
                   sys.exit("Public legacy download failed: "+path)
           def version(v): return tuple(map(int,v.split(".")))
-          old=json.loads(get_public("/manifest.json"))
-          print("Legacy public version:",old["version"])
-          assert version(old["version"])<=version(V), "Refusing to downgrade legacy channel"
-          root=api("/resources",{"path":"disk:/Yo-ho","fields":"public_url,public_key,type"},auth=True)
-          assert root["type"]=="dir" and root.get("public_url"),"Original folder is not shared"
-          # The old public link and the authenticated folder must serve identical old manifest bytes.
-          private_href=api("/resources/download",{"path":"disk:/Yo-ho/manifest.json"},auth=True)["href"]
-          try:
-              with u.urlopen(private_href,timeout=60) as r: private_old=json.loads(r.read())
-          except Exception: sys.exit("Authenticated manifest read failed")
-          assert private_old==old,"Authenticated folder does not match original public manifest"
+          root=api("/resources",{"path":"disk:/Yo-ho","fields":"public_url,public_key,type"},auth=True,allowed=(404,))
+          pubroot=api("/public/resources",{"public_key":public,"fields":"type,name,public_key,public_url"},allowed=(404,))
+          public_manifest=api("/public/resources/download",{"public_key":public,"path":"/manifest.json"},allowed=(404,))
+          private_manifest=api("/resources/download",{"path":"disk:/Yo-ho/manifest.json"},auth=True,allowed=(404,))
+          print("Authenticated release folder exists:",root is not None)
+          print("Original public folder reachable:",pubroot is not None)
+          print("Original public manifest reachable:",public_manifest is not None)
+          print("Authenticated manifest exists:",private_manifest is not None)
+          if root: print("Authenticated release folder is shared:",bool(root.get("public_url")))
+          assert root and root["type"]=="dir","Original authenticated folder missing"
+          assert pubroot and pubroot["type"]=="dir","Original embedded public link is unavailable; do not replace it"
+          assert root.get("public_key") and root.get("public_key")==pubroot.get("public_key"),"Public folder identity mismatch"
+          if public_manifest and private_manifest:
+              old=json.loads(get_public("/manifest.json"))
+              print("Legacy public version:",old["version"])
+              assert version(old["version"])<=version(V),"Refusing to downgrade legacy channel"
+              try:
+                  with u.urlopen(private_manifest["href"],timeout=60) as r: private_old=json.loads(r.read())
+              except Exception: sys.exit("Authenticated manifest read failed")
+              assert private_old==old,"Authenticated folder does not match original public manifest"
+          else:
+              assert not public_manifest and not private_manifest,"Public/authenticated manifest mismatch"
+              print("Original folder identity confirmed; missing manifest can be restored safely")
           name=f"Yo-ho-{V}.apk"
           manifest=pathlib.Path("out/manifest.json").read_bytes()
           apk=pathlib.Path("out")/name
@@ -117,7 +129,8 @@ jobs:
           assert len(actual)==apk.stat().st_size and hashlib.sha256(actual).hexdigest()==expected,"Public APK checksum mismatch"
           latest=subprocess.check_output(["gh","api","repos/"+os.environ["GH_REPO"]+"/releases/latest","--jq",".tag_name"],text=True).strip()
           assert latest=="v"+V,"Stable changed while mirroring; refusing to change manifest"
-          assert version(json.loads(get_public("/manifest.json"))["version"])<=version(V),"Legacy channel advanced"
+          existing=api("/public/resources/download",{"public_key":public,"path":"/manifest.json"},allowed=(404,))
+          if existing: assert version(json.loads(get_public("/manifest.json"))["version"])<=version(V),"Legacy channel advanced"
           upload("disk:/Yo-ho/manifest.json",pathlib.Path("out/manifest.json"))
           assert get_public("/manifest.json")==manifest,"Public manifest readback mismatch"
           print("Legacy channel verified from original public URL:",V)
