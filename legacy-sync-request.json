@@ -1,1 +1,1 @@
-{"purpose":"Restore current stable on original legacy public link","expected_stable":"0.8.94","attempt":2}
+{"purpose":"Restore stable legacy update using verified remote import fallback","expected_stable":"0.8.94","attempt":3}
